@@ -1,0 +1,163 @@
+__authors__ = ["David PS"]
+__email__ = "dps.helio-?-gmail.com"
+
+import argparse
+import sys
+import pyhc
+import numpy as np
+
+def vot2points(filename):
+    pass
+
+def netcdf2points(filename):
+    pass
+    
+def ascii2points(filename):
+    pass
+
+
+class fieldtrack(object):
+    
+    def __init__(self, hcfilename, 
+                 stop_minradius=0, stop_box=None):
+        hc = pyhc.PGrid()
+        self.hc = hc
+        try:
+            self.hc.open(hcfilename)
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
+            raise
+        self.stop_minradius = stop_minradius
+        model_stop_box = [hc.xmin0(), hc.xmax0(), 
+                          hc.xmin1(), hc.xmax1(),
+                          hc.xmin2(), hc.xmax2()]
+        if stop_box is None:
+            stop_box = model_stop_box
+        try:
+            stop_box = np.array(stop_box).reshape(3,2)
+        except ValueError as e:
+            print 'stop_box does not have the right dimension ', e
+
+        model_stop_box = np.array(model_stop_box).reshape(3,2)
+
+        #  Create a boolean array which contains the values within
+        # model box
+        box_bool = np.array([stop_box[:,0] >= model_stop_box[:,0], 
+                             stop_box[:,1] <= model_stop_box[:,1]]).transpose()
+        # Now, stop_box contains the limits within the box
+        self.stop_box = stop_box * box_bool + model_stop_box * ~box_bool
+
+
+    def track(self, points, vectorfield, stepsize=1, maxstep=1,
+              method='midpoint', direction='forward'):
+
+        self.stepsize = stepsize
+        self.maxstep = maxstep
+        self.vectorfield = vectorfield
+
+        direction_sign = {'forward': 1., 'backward': -1}
+
+        vectors = [vectorfield+x for x in ['x', 'y', 'z']]
+
+        track_points = np.empty((maxstep, 3))
+
+        track_points[0,:] = np.array(points)
+        # midpoint implementation
+        intpol3d = lambda v: self.hc.intpol(x[0], x[1], x[2], v)
+        for n in range(maxstep):
+            # Calculate the Vector direction for half of the step
+            x = track_points[n,:]
+            F = map(intpol3d, vectors)
+            if np.dot(F, F) == 0:
+                break
+            F = F / np.sqrt(np.dot(F, F))
+            midpoint = track_points[n,:] + 0.5 * F * stepsize * direction_sign[direction]
+            if not self.within(midpoint):
+                break
+            #  Apply midpoint direction to original point.
+            x = midpoint
+            F = map(intpol3d, vectors)
+            if np.dot(F, F) == 0:
+                break
+            F = F / np.sqrt(np.dot(F, F))
+            track_points[n + 1, :] = track_points[n, :] + F * stepsize * direction_sign[direction]
+            if not self.within(track_points[n+1, :]):
+                break
+
+        return track_points[:n,:]
+
+
+    def within(self, points):
+        ''' Check whether the point is within boundaries'''
+        result = True
+        for idx,element in enumerate(points):
+            result = result and self.stop_box[idx,0] <= element <= self.stop_box[idx,1]
+        if result:
+            return np.sqrt(np.dot(points, points)) >= self.stop_minradius
+        return False
+
+        
+
+
+if __name__ = '__main__':
+    parser = argparse.ArgumentParser(description=('Calculates a fieldlines '
+                                                  'from an hc model and a list '
+                                                  'of starting points.'))
+    parser.add_argument('hcfile', metavar='hcfile', type=argparse.FileType('r'),
+                        help='File from which we want to extract the fieldlines',
+                        required=True)
+    parser.add_argument('-i', '--input', default=None, type=argparse.FileType('r'),
+                        help=('File (netCDF, VOTable or ASCII) with '
+                              'starting points for the field lines.'),
+                        dest='mode')
+    parser.add_argument('-ifmt','--informat', choices=['vot', 'netcdf', 'csv'],
+                        default='csv', type=str,
+                        help='Format of the input file')
+    parser.add_argument('-c', '--coordinates', nargs=3, type=float,
+                        help='x y z coordinates as starting point for field line',
+                        dest='mode')
+    parser.add_argument('--savepath', default='./', type=str, 
+                        help='Path where to save the result')
+    parser.add_argument('-ofmt','--outformat', choices=['vot','netcdf'],
+                        default="vot",
+                        help=('Format for the output, they are either: '
+                              'vot for votable, or netcdf'))
+    parser.add_argument('-o','--output', default=None, type=argparse.FileType('w'),
+                        help='Output file')
+
+    parser.add_argument('--method', choices=['midpoint'], default='midpoint',
+                        help='Method used to calculate the field line.')
+
+    parser.add_argument('--direction', choices=['forward','backward'], 
+                        default='forward',
+                        help='Field line will follow such direction')
+    paraser.add_argument('-vf','--vectorfield', default=None, type=str,
+                         nargs='*',
+                         help=('Spaced list of all the vector fields desired to trace.'
+                               ' All vectors are taken if ommited.'))
+    parser.add_argument('-ss','--stepsize', type=float,
+                        default=40000,#TODO: deffinition -> gridsize/4
+                        help='Step size in units?') #TODO: Which units?
+    parse.add_argument('-maxs','--maxstep', type=int,
+                       default=400, #TODO: needs to be determined
+                       help='Maximum number of steps per field/stream line')
+    parse.add_argument('-minr','--minradius', type=float,
+                       default=0,
+                       help=('Field line tracing stops if distance from center '
+                             'is smaller than this value. Units: ??')) #TODO: units?
+    parse.add_argument('-b','--boxlimit', nargs=6, type=float,
+                       default=None,
+                       help=('Field line tracing stops if outside the box boundaries: '
+                             'x1 x2 y1 y2 z1 z2. Units: ?'))#TODO: units?
+
+
+
+
+
+    args = parser.parse_args([x for x in sys.argv[1:]])
+    if not args.mode:
+        args.error('One of --input or --coordinates must be given')
+
+    
+
+# Check extension of initpoints and pass parser to get points
