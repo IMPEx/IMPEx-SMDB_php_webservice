@@ -23,10 +23,32 @@ def netcdf2points(filename):
 def ascii2points(filename):
     pass
 
-def points2vot(filename, fieldlines, args):
+def points2vot(filename, fieldlines, query):
+    # as explained in
+    # https://astropy.readthedocs.org/en/latest/io/votable/index.html#building-a-new-table-from-scratch
+    vot = votable.tree.VOTableFile()
 
+    resource = votable.tree.Resource()
+    vot.resources.append(resource)
+    # TODO: add information for the input (query)
+    
+    for lines in fieldlines:
+        table = votable.tree.Table(vot)
+        resource.tables.append(table)
 
-    pass
+        table = fields.extend([
+            votable.tree.Field(votable, name='posx', datatype='double', arraysize='1', units='m', ucd='pos.cartesian.x'),
+            votable.tree.Field(votable, name='posy', datatype='double', arraysize='1', units='m', ucd='pos.cartesian.y'),
+            votable.tree.Field(votable, name='posz', datatype='double', arraysize='1', units='m', ucd='pos.cartesian.z')
+        ])
+        
+        table.create_arrays(lines.shape[0])
+    
+        lines_mask = np.ma.masked_array(lines, mask = False)
+        
+        table.array = lines_mask
+    
+    votable.to_xml(filename)
 
 class Fieldtrack(object):
     
