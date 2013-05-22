@@ -5,9 +5,17 @@ import argparse
 import sys
 import pyhc
 import numpy as np
+import astropy.io.votable as votable
 
 def vot2points(filename):
-    pass
+    vot = votable.parse_single_table(filename)
+    types = ['x', 'y', 'z']
+    points = np.empty((vot.nrows, 3))
+    for idx, elem in enumerate(types):
+        column = vot.get_field_by_id_or_name(elem)
+        if column.ucd == 'pos.cartesian.' + elem:
+            points[:, idx] = vot.array[column.ID].data
+    return points
 
 def netcdf2points(filename):
     pass
@@ -15,8 +23,12 @@ def netcdf2points(filename):
 def ascii2points(filename):
     pass
 
+def points2vot(filename, fieldlines, args):
 
-class fieldtrack(object):
+
+    pass
+
+class Fieldtrack(object):
     
     def __init__(self, hcfilename, 
                  stop_minradius=0, stop_box=None):
@@ -49,7 +61,7 @@ class fieldtrack(object):
 
 
     def track(self, points, vectorfield, stepsize=1, maxstep=1,
-              method='midpoint', direction='forward'):
+              direction='forward', method='midpoint'):
 
         self.stepsize = stepsize
         self.maxstep = maxstep
@@ -63,28 +75,27 @@ class fieldtrack(object):
 
         track_points[0,:] = np.array(points)
         # midpoint implementation
-        intpol3d = lambda v: self.hc.intpol(x[0], x[1], x[2], v)
         for n in range(maxstep):
             # Calculate the Vector direction for half of the step
-            x = track_points[n,:]
-            F = map(intpol3d, vectors)
-            if np.dot(F, F) == 0:
-                break
-            F = F / np.sqrt(np.dot(F, F))
-            midpoint = track_points[n,:] + 0.5 * F * stepsize * direction_sign[direction]
-            if not self.within(midpoint):
+            midpoint = follow_point(track_points[n,:],track_points[n,:], 0.5 * self.stepsize * direction_sign[direction])
+            if midpoint is False or not self.within(midpoint):
                 break
             #  Apply midpoint direction to original point.
-            x = midpoint
-            F = map(intpol3d, vectors)
-            if np.dot(F, F) == 0:
+            endpoint = follow_point(midpoint, track_points[n,:], self.stepsize * direction_sign[direction])
+            if endpoint is False or not self.within(endpoint):
                 break
-            F = F / np.sqrt(np.dot(F, F))
-            track_points[n + 1, :] = track_points[n, :] + F * stepsize * direction_sign[direction]
-            if not self.within(track_points[n+1, :]):
-                break
-
+            track_points[n + 1, :] = endpoint
         return track_points[:n,:]
+
+
+    def follow_point(self, initpoint, point0, stepsize):
+        x = initpoint
+        intpol3d = lambda v: self.hc.intpol(x[0], x[1], x[2], v)
+        F = map(intpol3d, vectors)
+        if np.dot(F, F) == 0:
+            return False
+        F = F / np.sqrt(np.dot(F, F))
+        return point0 + F * stepsize
 
 
     def within(self, points):
@@ -116,8 +127,8 @@ if __name__ = '__main__':
     parser.add_argument('-c', '--coordinates', nargs=3, type=float,
                         help='x y z coordinates as starting point for field line',
                         dest='mode')
-    parser.add_argument('--savepath', default='./', type=str, 
-                        help='Path where to save the result')
+    #parser.add_argument('--savepath', default='./', type=str, 
+    #                    help='Path where to save the result')
     parser.add_argument('-ofmt','--outformat', choices=['vot','netcdf'],
                         default="vot",
                         help=('Format for the output, they are either: '
@@ -132,7 +143,7 @@ if __name__ = '__main__':
                         default='forward',
                         help='Field line will follow such direction')
     paraser.add_argument('-vf','--vectorfield', default=None, type=str,
-                         nargs='*',
+                         #nargs='*',
                          help=('Spaced list of all the vector fields desired to trace.'
                                ' All vectors are taken if ommited.'))
     parser.add_argument('-ss','--stepsize', type=float,
@@ -160,4 +171,31 @@ if __name__ = '__main__':
 
     
 
-# Check extension of initpoints and pass parser to get points
+    # Check extension of initpoints and pass parser to get points
+    field = Fieldtrack(args.hcfile,
+                       stop_minradius=args.minradius,
+                       stop_box=args.boxlimit)
+
+    # Handle input formats
+    if args.informat == 'vot':
+        try:
+            votable.is_votable(args.input)
+        except:
+            print 'The input file is not formatted as votable'
+        
+        points = vot2points(args.input)
+
+    # Calculate field lines  #TODO: what if multiple vectorfields?
+    fieldlines = []
+    for row in points:
+        fieldlines.append(field.track(row, 
+                                      args.vectorfield,
+                                      args.stepsize,
+                                      args.maxstep,
+                                      args.direction,
+                                      'midpoint'))
+
+    # Save in the requested output format
+    if args.outformat == 'vot':
+        points2vot(args.output, fieldlines, args)
+        
