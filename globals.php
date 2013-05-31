@@ -1,0 +1,5 @@
+<?php
+$institute = 'fmi'; /*latmos, .... */
+
+
+?>
