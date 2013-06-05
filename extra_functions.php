@@ -67,7 +67,7 @@ function check_resourceID($ResourceID, $tree_url){
 function find_resourceID($ResourceID, $resourceList){
   foreach ($resourceList as $key => $value)
     {  
-      if (preg_match("/$value/", $ResourceID))
+      if (preg_match("/".$value."/", $ResourceID))
 	{
 	  return $key;
 	}
