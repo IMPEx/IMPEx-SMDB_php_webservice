@@ -227,7 +227,7 @@ function check_input_InterpolationMethod($input_InterpolationMethod){
       $input_InterpolationMethod = strtolower($input_InterpolationMethod);
       /* this should be done in a more general way where we have a list of possible
 	 methods and check wether the input correspond to any of those */
-      if ($input_InterpolationMethod !== 'linear' AND $InterpolationMethod !== 'nearestgridpoint'
+      if ($input_InterpolationMethod !== 'linear' AND $InterpolationMethod !== 'nearestgridpoint')
 	{
 	  throw new SoapFault('1', 'InterpolationMethod needs to be one of '.
 			      'the possible values [Linear or NearestGridPoint]');
@@ -421,5 +421,5 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
   /* if NULL return null or valid_min and valid_max? */
   return $StopCondition_Region
 }
- 
+
 ?>
