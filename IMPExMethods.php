@@ -79,7 +79,7 @@ class IMPExMethods {
    * @param Float $StepSize (default 100 m) -> needs to be Gridsize/4
    * @param Integer $MaxSteps (default ??)
    * @param Float $StopCondition_Radius (default 0)
-   * @param array $StopCondition_Region
+   * @param String $StopCondition_Region
    * @param String $OutputFileType (default votable)
    * @param Float $IMFClockAngle (default 0)
    * @param String $url_XYZ
