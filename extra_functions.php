@@ -100,11 +100,11 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
     {
       throw new SoapFault('2', 'The ResourceID is not from a model accessible from here');
     }
-  if (!check_resourceID($ResourceID, $tree_url))
+  if (!check_resourceID($ResourceID, $tree_url[$model_institute]))
     {
       throw new SoapFault('3', 'The ResourceID does not exist in this SMDB');
     }
-  $tree = file_get_contents($tree_url[$model_institute]);
+  $tree = file_get_contents($tree_url[$model_institute]); /*TODO: caught exeption instead of above if?*/
   $model = new SimpleXmlElement($tree);
   foreach ($model->NumericalOutput as $entry)
     {

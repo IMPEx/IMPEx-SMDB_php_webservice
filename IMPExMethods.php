@@ -41,7 +41,7 @@ class IMPExMethods {
 	==================================================
     */
     /* ResourceID */
-    $model_properties = check_input_ResourceID($ResourceID, $models, $tree_url);
+    $model_properties = check_input_ResourceID($ResourceID, $GLOBALS['models'], $GLOBALS['tree_url']);
 
     /* Variable */
     $variables = check_input_Variable($Variable, $model_properties['parameters']);
@@ -99,7 +99,7 @@ class IMPExMethods {
 	==================================================
     */
     /* ResourceID */
-    $model_properties = check_input_ResourceID($ResourceID, $models, $tree_url);
+    $model_properties = check_input_ResourceID($ResourceID, $GLOBALS['models'], $GLOBALS['tree_url']);
 
     /* Variable */
     $outVariable = check_input_Variable($Variable, $model_properties['parameters']);
