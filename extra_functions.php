@@ -399,15 +399,15 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 	    {
 	      throw new SoapFault('2', 'The lower boundaries (x,y,z) = ['.
 				  implode(",", $lower_boundaries).
-				  .'] are outside model boundaries ['.
+				  '] are outside model boundaries ['.
 				  implode(",", $model_properties['valid_min']).
 				  ']');
 	    }
 	  else if ( $upper_boundaries >  $model_properties('valid_max'))
 	    {
 	      throw new SoapFault('2', 'The upper boundaries (x,y,z) = ['.
-				  .implode(",", $upper_boundaries).
-				  .'] are outside model boundaries ['.
+				  implode(",", $upper_boundaries).
+				  '] are outside model boundaries ['.
 				  implode(",",$model_properties['valid_max']).
 				  ']');
 	    }
