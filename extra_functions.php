@@ -419,7 +419,8 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 	}
     }
   /* if NULL return null or valid_min and valid_max? */
-  return $StopCondition_Region
+  return $StopCondition_Region;
 }
+    
 
 ?>
