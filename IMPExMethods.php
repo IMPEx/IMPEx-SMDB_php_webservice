@@ -6,6 +6,13 @@
  * @package IMPEx_wrapper
  * @copyright Copyright 2013 IMPEx (EC fp7 project)
  * @license http://www.gnu.org/licenses/gpl.html
+ *
+ *
+ *
+ * NOTES: I've found that array inputs does not work from python; 
+ *        [TypeNotFound: Type not found: '(Array, http://schemas.xmlsoap.org/soap/encoding/, )']
+ *        and from Taverna it has not a normal behaviour
+ *
  */
 require('config.php');
 require_once('extra_functions.php');
@@ -35,18 +42,30 @@ class IMPExMethods {
     */
     /* ResourceID */
     $model_properties = check_input_ResourceID($ResourceID, $models, $tree_url);
+
     /* Variable */
     $variables = check_input_Variable($Variable, $model_properties['parameters']);
+
     /* url_XYZ */   
     check_input_url($url_XYZ);
+
     /* IMFClockAngle */  
     $IMFClockAngle = check_input_IMFClockAngle($IMFClockAngle);
-    /* InterpolationMethod TODO */
+
+    /* InterpolationMethod */
+    check_input_InterpolationMethod($InterpolationMethod);
+
     /* OutputFileType  */
     $OutputFileType = check_input_OutputFileType($OutputFileType);
 
+    /* RUN external program */
     /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client?*/
-    return true;
+    $url_Param = run_getDataPointValue($ResourceID, $variables,
+				       $url_XYZ, $IMFClockAngle,
+				       $InterpolationMethod,
+				       $OutputFiletype);
+    /* TODO: return error message if file/url not created */
+    return $url_Param;
   }
 
 
@@ -81,72 +100,25 @@ class IMPExMethods {
     */
     /* ResourceID */
     $model_properties = check_input_ResourceID($ResourceID, $models, $tree_url);
-    /* Variable TODO*/
-    $outVariable = check_input_Variable($Variable, $model_properties['parameters']);    /* Direction */
-    if (is_string($Direction)) /* I think SOAP checks this already */
-      {
-	$Direction = strtolower($Direction);
-	if ($Direction == '')
-	  {
-	    $Direction = 'forward';
-	  }
-	else if ( $Direction !== 'forward' AND $Direction !== 'backward' )
-	  {
-	    throw new SoapFault('1', 'Direction needs to be one of '.
-				'the possible values [backward or forward]');
-	  }
-      }
-    else if (is_null($Direction))
-      {
-	$Direction = 'forward';
-      }
-    else  
-      {
-	/* Though SOAP will throw the error if it's not a string */
-	throw new SoapFault('0', 'Direction needs to be a string');
-      }
+
+    /* Variable */
+    $outVariable = check_input_Variable($Variable, $model_properties['parameters']);
+
+    /* Direction */
+    $Direction = check_input_Direction($Direction);
+
     /* Stepsize */
-    if (is_null($StepSize))
-      {
-	$StepSize = 100.; /** meters */
-      }
-    /* if $Stepsize is not a float then SOAP will complain before here */
+    $StepSize = check_input_StepSize($StepSize, $model_properties);
+
     /* MaxSteps */
-    if (is_null($MaxSteps))
-      {
-	$MaxSteps = 100; /** steps  This may be end of fieldline?*/
-      }
-    else if (!is_int($MaxSteps))
-      {
-	/* SOAP does not complain between integer or float */
-	throw new SoapFault('1', 'MaxSteps needs to be an Integer');
-      }
+    $MaxSteps = check_input_MaxSteps($MaxSteps);
+
     /* StopCondition_Radius */
-    if (is_null($StopCondition_Radius))
-      {
-	$StopCondition_Radius = 0;
-      }
+    $StopCondition_Radius = check_input_StopCondition_Radius($StopCondition_Radius);
+
     /* StopCondition_Region  */
-    if (!is_null($StopCondition_Region))
-      {
-	$StopCondition_Region_array = preg_split("/[\s(,|;)]+/", $StopCondition_Region);
-	if (count($StopCondition_Region_array) !== 6)
-	  {
-	    throw new SoapFault('1', 'StopCondition_Region needs 6 elements '.
-				'separated by "," or ";". The region input has '.
-				count($StopCondition_Region_array).' elements.');
-	  }
-	else if (!is_numeric_array($array))
-	  {
-	    throw new SoapFault('1', 'StopCondition_Region needs 6 float elements');
-	  }
-      }
-    /* Use defaults? From tree or in the out code?
-    else
-      {
-	
-      }
-    */
+    $StopCondition_Region = check_input_StopCondition_Region($StopCondition_Region, $model_properties);
+
     /* OutputFileType  */
     $OutputFileType = check_input_OutputFileType($OutputFileType);
 
@@ -167,8 +139,8 @@ class IMPExMethods {
 				  $OutputFileType,
 				  $IMFClockAngle,
 				  $url_XYZ);
-    /* TODO: return error message if file not created */
-    return url_Param;
+    /* TODO: return error message if file/url not created */
+    return $url_Param;
   }
 
 

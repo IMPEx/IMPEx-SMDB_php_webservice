@@ -9,8 +9,6 @@
  */
 
 
-
-
 /**
  * is_numeric_array checks whether all elements are numeric
  * @param array $array 
@@ -125,6 +123,12 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 		  $gridstructure = $simulation->simulationdomain->gridstructure;
 		  $gridcellsize  = preg_split("/[\s,]+/",
 					      $simulation->simulationdomain->gridcellsize);
+		  $coordinates_order = preg_split("/[\s,]+/",
+						  $simulation->simulationdomain->CoordinatesLabel);
+		  $valid_min = preg_split("/[\s,]+/",
+					  $simulation->simulationdomain->ValidMin);
+		  $valid_max =  preg_split("/[\s,]+/",
+					  $simulation->simulationdomain->ValidMax);
 		}
 	    }
 	    
@@ -137,7 +141,10 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 			       'parameters' => $parameters,
 			       'resourceIDSimulation' => $resourceIDSimulation,
 			       'gridStructure' => $gridstructure,
-			       'gridSize' => $gridcellsize);
+			       'gridSize' => $gridcellsize,
+			       'coordinates' => $coordinates_order,
+			       'valid_min' => $valid_min,
+			       'valid_max' => $valid_max);
   return $resource_properties;
 }
 
@@ -203,6 +210,31 @@ function check_input_IMFClockAngle($input_IMFCAngle){
   /* any conditions to add to IMFClockAngle? (value range?) */
   return $input_IMFCAngle;
 }
+
+/**
+ * check_input_InterpolationMethod
+ * @param string $InterpolationMethod
+ * @return string $input_InterpolationMethod (default linear)
+ * @throws
+ */
+function check_input_InterpolationMethod($input_InterpolationMethod){
+  if (is_null($input_InterpolationMethod) or $input_InterpolationMethod == '')
+    {
+      return 'linear';
+    }
+  else
+    {
+      $input_InterpolationMethod = strtolower($input_InterpolationMethod);
+      /* this should be done in a more general way where we have a list of possible
+	 methods and check wether the input correspond to any of those */
+      if ($input_InterpolationMethod !== 'linear' AND $InterpolationMethod !== 'nearestgridpoint'
+	{
+	  throw new SoapFault('1', 'InterpolationMethod needs to be one of '.
+			      'the possible values [Linear or NearestGridPoint]');
+	}
+    }
+}
+
 /**
  * check_input_OutputFileType finds whether the input_OutputFileType is valid 
  * @param string $input_OutputFileType
@@ -226,6 +258,168 @@ function check_input_OutputFileType($input_OutputFileType){
   return $input_OutputFileType;
 }
 
+/**
+ * check_input_Direction tests the input value
+ * @param string Direction 
+ * @return string Direction (default forward)
+ * @throw SoapFault for (1) a non supported input
+ */
+function check_input_Direction($Direction){
+  if (is_null($Direction) OR ($Direction == ''))
+    {
+      return 'forward';
+    }
+  else 
+    {
+      $Direction = strtolower($Direction);
+      if ( $Direction !== 'forward' AND $Direction !== 'backward' )
+	{
+	  throw new SoapFault('1', 'Direction needs to be one of '.
+			      'the possible values [backward or forward]');
+	}
+    }
+}
 
+/**
+ * check_input_StepSize finds out whether the input is valid or asign the default value depending on the model
+ * @param float $StepSize
+ * @param array $model_properties with the keys: gridStructure and gridSize
+ * @return float $StepSize
+ * @throw SoapFault if (1) StepSize is not greater than 0, (2) keys are not present in the model_properties
+ */
+function check_input_StepSize($StepSize, array $model_properties){
+  if (is_null($StepSize))
+    {
+      if (array_key_exists('gridStructure', $model_properties) AND 
+	  array_key_exists('gridSize', $model_properties))
+	{
+	  $min_gridSize = min($model_properties['gridSize']);
+	  if (preg_match("/constant/", strtolower($model_properties['gridStructure'])))
+	    {
+	      return $min_gridSize/4.;
+	    }
+	  else if (preg_match("/variable/", strtolower($model_properties['gridStructure']))) /* when is not constant */
+	    {
+	      /* assuming that it follows something like: "Variable. 3 levels..."
+		 or the first number in that string is the number of levels. */
+	      preg_match_all('/\d+/', $model_properties['gridStructure'],  $smaller_level);
 
+	      /*TODO: This may fail if there's not a number on the gridStructure! */
+
+	      /* it's divided by 2^(levels-1) to know the smaller grid size,
+		 and then divided by 4 as the deffault stepsize */
+	      return $min_gridSize/pow(2,$smaller_level - 1)/4.;
+	    }
+	  else
+	    {
+	      /*model grid not supported*/
+	      throw new SoapFault('2', 'the GridStructure is not Constant or Variable');
+	    }
+	}
+      else
+	{
+	  throw new SoapFault('2', 'there is some problem with the model description');
+	}
+    }
+  else if  ($StepSize <= 0)
+    {
+      throw new SoapFault('1', 'The StepSize needs to be greater than 0');
+    }
+  else
+    {
+      return $StepSize;
+    }
+}
+
+/**
+ * check_input_MaxStep
+ * @param int $MaxStep
+ * @return ??
+ * @throw SoapFault if number is not integer
+ */
+function check_input_MaxSteps($MaxSteps){
+  if (is_null($MaxSteps))
+    {
+      return 100; /* steps; or maybe Null so it goes till the end?  */
+    }
+  else if (!is_int($MaxSteps))
+    {
+      /* SOAP does not complain between integer or float */
+      throw new SoapFault('1', 'MaxSteps needs to be an Integer');
+    }
+}
+
+/**
+ * check_input_StopCondition_Radius
+ * @param float StopCondition_Radius
+ * @return float StopCondition_Radius (default 0)
+ * @throw SoapFault if (1) input < 0
+ */
+function check_input_StopCondition_Radius($StopCondition_Radius){
+  if (is_null($StopCondition_Radius))
+    {
+      $StopCondition_Radius = 0;
+    }
+  else if ($StopCondition_Radius < 0)
+    {
+      throw new SoapFault('1', 'StopCondition_Radius need to be larger than 0');
+    }
+  return $StopCondition_Radius;	      
+}
+
+/**
+ * check_input_StopCondition_Region
+ * @param string StopCondition_Region - a six element separated by " ","," or ";"
+ * @param array $model_properties with the keys: 'valid_min' and 'valid_max'
+ * @return array $StopCondition_Region as an array (or NULL)
+ * @throw SoapFault if (1) wrong format, (2) Out of boundaries, (3) Model boundaries not in model_properties
+ */
+function check_input_StopCondition_Region($StopCondition_Region, array $model_properties){
+  if (!is_null($StopCondition_Radius))
+    {
+      $StopCondition_Region_array = preg_split("/[\s(,|;)]+/", $StopCondition_Region);
+      if (count($StopCondition_Region_array) !== 6)
+	{
+	  throw new SoapFault('1', 'StopCondition_Region needs 6 elements '.
+			      'separated by "," or ";". The region input has '.
+			      count($StopCondition_Region_array).' elements.');
+	}
+      else if (!is_numeric_array($array))
+	{
+	  throw new SoapFault('1', 'StopCondition_Region needs 6 float elements');
+	}
+      $StopCondition_Region = $StopCondition_Region_array; /* so we can return NULL */
+      if (array_key_exists('valid_min', $model_properties) AND
+	  array_key_exists('valid_max', $model_properties))
+	{
+	  /* compare input array with model boundaries */
+	  $lower_boundaries = array($StopCondition_Radius[0], $StopCondition_Radius[2], $StopCondition_Radius[4]);
+	  $upper_boundaries = array($StopCondition_Radius[1], $StopCondition_Radius[3], $StopCondition_Radius[5]);
+	  if ($lower_boundaries < $model_properties('valid_min'))
+	    {
+	      throw new SoapFault('2', 'The lower boundaries (x,y,z) = ['.
+				  implode(",", $lower_boundaries).
+				  .'] are outside model boundaries ['.
+				  implode(",", $model_properties['valid_min']).
+				  ']');
+	    }
+	  else if ( $upper_boundaries >  $model_properties('valid_max'))
+	    {
+	      throw new SoapFault('2', 'The upper boundaries (x,y,z) = ['.
+				  .implode(",", $upper_boundaries).
+				  .'] are outside model boundaries ['.
+				  implode(",",$model_properties['valid_max']).
+				  ']');
+	    }
+	}
+      else
+	{
+	  /* model coordinates not in array! */
+	  throw new SoapFault('3', 'the model boundaries are not available');
+	}
+    }
+  /* if NULL return null or valid_min and valid_max? */
+  return $StopCondition_Region
+}
+ 
 ?>
