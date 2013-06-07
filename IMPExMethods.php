@@ -92,7 +92,7 @@ class IMPExMethods {
 			       $StopCondition_Radius = NULL,
 			       $StopCondition_Region = NULL, 
 			       $OutputFileType = 'votable',
-			       $IMFClockAngle = NULL, 
+			       $IMFClockAngle = 0, 
 			       $url_XYZ){
     /*  ==================================================
 	Check variables 
@@ -143,6 +143,86 @@ class IMPExMethods {
     return $url_Param;
   }
 
+  /**
+   * getDataPointValue_spacecraft ...
+   *
+   * @param String $ResourceID
+   * @param String $Variable
+   * @param String $Spacecraft_name
+   * @param String $StartTime - it should be time input
+   * @param String $StopTime
+   * @param String $Sampling - (iso8601)
+   * @param Float $IMFClockAngle (default 0)
+   * @param String $InterpolationMethod (default linear)
+   * @param String $OutputFileType (default votable)
+   * @return String URL of the saved output in the format requested
+   */
+  public function getDataPointValue_spacecraft($ResourceID, $Variable = NULL, 
+					       $Spacecraft_name,
+					       $StartTime, 
+					       $StopTime, 
+					       $Sampling,
+					       $IMFClockAngle = 0,
+					       $InterpolationMethod = 'Linear',
+					       $OutputFileType = 'votable'){
+    /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
 
+  /**
+   * getDataPointSpectra ...
+   *
+   * @param String $ResourceID
+   * @param String $Population
+   * @param String $url_XYZ
+   * @param Float $IMFClockAngle (default 0)
+   * @param String $InterpolationMethod (default linear)
+   * @param String $OutputFileType (default votable)
+   * @param String $EnergyChannel
+   * @return String URL of the saved output in the format requested
+   */
+  public function getDataPointSpectra($ResourceID, $Population = NULL, 
+				      $url_XYZ,
+				      $IMFClockAngle = 0,
+				      $InterpolationMethod = 'Linear',
+				      $OutputFileType = 'votable',
+				      $EnergyChannel = NULL){
+    /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
+
+  /**
+   * getSurface ...
+   *
+   * @param String $ResourceID
+   * @param String $Variable
+   * @param String $NormalVectorPlane
+   * @param String $PlanePoint
+   * @param Float $Resolution - default basic grid size -
+   * @param Float $IMFClockAngle (default 0)
+   * @param String $InterpolationMethod (default linear)
+   * @param String $OutputFileType (default votable)
+   * @return String URL of the saved output in the format requested
+   */
+  public function getSurface($ResourceID, $Variable = NULL, 
+			     $NormalVectorPlane,
+			     $PlanePoint,
+			     $Resolution,
+			     $IMFClockAngle = 0,
+			     $InterpolationMethod = 'Linear',
+			     $OutputFileType = 'votable'){
+    /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
+  /* getFileURL, getDataPointSpectra_spacecraft, getParticleTrajectory */
 }
 ?>
