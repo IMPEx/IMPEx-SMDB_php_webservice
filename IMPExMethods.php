@@ -29,13 +29,13 @@ class IMPExMethods {
    * @param String $url_XYZ
    * @param Float $IMFClockAngle (default 0)
    * @param String $InterpolationMethod (default Linear )
-   * @param String $OutputFiletype (default votable)
+   * @param String $OutputFileType (default votable)
    * @return String URL of the parameters requested
    */
   public function getDataPointValue($ResourceID, $Variable = NULL,
 				    $url_XYZ, $IMFClockAngle = 0,
 				    $InterpolationMethod = 'Linear',
-				    $OutputFiletype = 'votable'){
+				    $OutputFileType = 'votable'){
     /*  ==================================================
 	Check variables 
 	==================================================
@@ -63,7 +63,7 @@ class IMPExMethods {
     $url_Param = run_getDataPointValue($ResourceID, $variables,
 				       $url_XYZ, $IMFClockAngle,
 				       $InterpolationMethod,
-				       $OutputFiletype);
+				       $OutputFileType);
     /* TODO: return error message if file/url not created */
     return $url_Param;
   }
@@ -144,7 +144,7 @@ class IMPExMethods {
   }
 
   /**
-   * getDataPointValue_spacecraft ...
+   * getDataPointValue_spacecraft ...TODO.
    *
    * @param String $ResourceID
    * @param String $Variable
@@ -173,7 +173,7 @@ class IMPExMethods {
   }
 
   /**
-   * getDataPointSpectra ...
+   * getDataPointSpectra ....TODO
    *
    * @param String $ResourceID
    * @param String $Population
@@ -198,7 +198,7 @@ class IMPExMethods {
   }
 
   /**
-   * getSurface ...
+   * getSurface ...TODO.
    *
    * @param String $ResourceID
    * @param String $Variable
@@ -223,6 +223,84 @@ class IMPExMethods {
     */
     return true;
   }
-  /* getFileURL, getDataPointSpectra_spacecraft, getParticleTrajectory */
+  /**
+   * getFileURL ...TODO
+   *
+   * @param String $RunID 
+   * @param String $StartTime - it should be time input
+   * @param String $StopTime
+   * @return String VOtable file! would it work?
+   */
+  public function getFileURL($RunID, $StartTime,
+			     $StopTime){
+    /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
+
+  /**
+   * getDataPointSpectra_spacecraft ...TODO
+   *
+   * @param String $ResourceID
+   * @param String $Population
+   * @param String $Spacecraft_name 
+   * @param String $StartTime
+   * @param String $StopTime
+   * @param String $Sampling
+   * @param Float $IMFClockAngle (default 0)
+   * @param String $InterpolationMethod (default linear)
+   * @param String $OutputFileType (default votable)
+   * @return String URL of the saved output in the format requested
+   */
+  public function getDataPointSpectra_spacecraft($ResourceID,
+						 $Population = NULL,
+						 $Spacecraft_name,
+						 $StartTime,
+						 $StopTime,
+						 $Sampling,
+						 $IMFClockAngle = 0,
+						 $InterpolationMethod = 'Linear',
+						 $OutputFileType = 'votable'){
+
+     /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
+
+  /**
+   * getParticleTrajectory ...TODO
+   * 
+   * @param String $ResourceID
+   * @param String $Direction  (default forward)
+   * @param Float $StepSize (default... seconds)
+   * @param Int $MaxSteps
+   * @param Float $StopCondition_Radius (default 0)
+   * @param String $StopCondition_Region
+   * @param String $InterpolationMethod (default linear)
+   * @param String $OutputFileType (default votable)
+   * @param String $url_XYZ
+   * @return String URL of the saved output in the format requested
+   */
+  public function getParticleTrajectory($ResourceID,
+					$Direction = 'Forward',
+					$StepSize = NULL,
+					$MaxSteps = NULL,
+					$StopCondition_Radius = NULL,
+					$StopCondition_Region = NULL,
+					$InterpolationMethod = NULL,
+					$OutputFileType = 'votable',
+					$url_XYZ){
+
+    
+    /*  ==================================================
+	Check variables 
+	==================================================
+    */
+    return true;
+  }
 }
 ?>
