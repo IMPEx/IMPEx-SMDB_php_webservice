@@ -111,22 +111,22 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
       if ($entry->ResourceID == $ResourceID)
 	{
 	  $parameters = array();
-	  foreach ($entry->parameter->parameterkey as $param)
+	  foreach ($entry->Parameter as $param)
 	    {
-	      array_push($parameters, $param);
+	      array_push($parameters, $param->ParameterKey);
 	    }
-	  $resourceIDSimulation = $entry->inputresourceid;
-	  foreach ($model->simulationrun as $simulation)
+	  $resourceIDSimulation = $entry->InputResourceID;
+	  foreach ($model->SimulationRun as $simulation)
 	    {
-	      if ($simulation->resourceid == $resourceIDSimulation)
+	      if ($simulation->ResourceID == $resourceIDSimulation)
 		{
-		  $gridstructure = $simulation->simulationdomain->gridstructure;
+		  $gridstructure = $simulation->SimulationDomain->GridStructure;
 		  $gridcellsize  = preg_split("/[\s,]+/",
-					      $simulation->simulationdomain->gridcellsize);
+					      $simulation->SimulationDomain->GridCellSize);
 		  $coordinates_order = preg_split("/[\s,]+/",
-						  $simulation->simulationdomain->CoordinatesLabel);
+						  $simulation->SimulationDomain->CoordinatesLabel);
 		  $valid_min = preg_split("/[\s,]+/",
-					  $simulation->simulationdomain->ValidMin);
+					  $simulation->SimulationDomain->ValidMin);
 		  $valid_max =  preg_split("/[\s,]+/",
 					  $simulation->simulationdomain->ValidMax);
 		}
