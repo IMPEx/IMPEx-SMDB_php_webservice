@@ -60,10 +60,12 @@ class IMPExMethods {
 
     /* RUN external program */
     /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client?*/
-    $url_Param = run_getDataPointValue($ResourceID, $variables,
-				       $url_XYZ, $IMFClockAngle,
-				       $InterpolationMethod,
-				       $OutputFileType);
+    $Parameters = array($ResourceID, $variables,
+			$url_XYZ, $IMFClockAngle,
+			$InterpolationMethod,
+			$OutputFileType);
+    $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
+				$Parameters,);
     /* TODO: return error message if file/url not created */
     return $url_Param;
   }
@@ -130,15 +132,18 @@ class IMPExMethods {
 
     /* RUN external program */
     /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client?*/
-    $url_Param = run_getFieldLine($ResourceID, $Variable, 
-				  $Direction,
-				  $StepSize,
-				  $MaxSteps,
-				  $StopCondition_Radius,
-				  $StopCondition_Region,
-				  $OutputFileType,
-				  $IMFClockAngle,
-				  $url_XYZ);
+    $Parameters = array($ResourceID, $Variable, 
+			$Direction,
+			$StepSize,
+			$MaxSteps,
+			$StopCondition_Radius,
+			$StopCondition_Region,
+			$OutputFileType,
+			$IMFClockAngle,
+			$url_XYZ);
+
+    $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
+				$Parameters,);
     /* TODO: return error message if file/url not created */
     return $url_Param;
   }

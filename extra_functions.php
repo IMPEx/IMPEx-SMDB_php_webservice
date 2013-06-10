@@ -75,7 +75,33 @@ function find_resourceID($ResourceID, $resourceList){
   return NULL;
 }
 
+/**
+ * execute_ExternalMethod
+ * @param String $Server
+ * @param String $MethodName
+ * @param Array $Parameters
+ * @return String URL with the results
+ */
+function execute_ExternalMethod($Server, $MethodName, array $Parameters){
 
+  $client = new Zend_Soap_Client($Server);
+  $result = call_user_func_array(array($client,$MethodName),
+				 $Parameters);
+
+  return $result;
+}
+
+/**
+ * execute_InternalMethod
+ * @param String $MethodName
+ * @param Array $Parameters
+ * @return String URL with the results
+ */
+function execute_InternalMethod($MethodName, array $Parameters){
+  /* Function to execute */
+  $local_Method = $GLOBALS['dict_functions'][$MethodName];
+  $result = call_user_func_array($local_Method, $Parameters);
+}
 /*
    =========================================================
    SOAP methods check functions
@@ -421,6 +447,37 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
   /* if NULL return null or valid_min and valid_max? */
   return $StopCondition_Region;
 }
-    
+
+/*
+   =========================================================
+   Execute methods
+   =========================================================
+*/
+
+/**
+ * execute_ExternalMethods calls the apropriate function to execute
+ *
+ * @param String $MethodName 
+ * @param String $institute
+ * @param Array $Parameters list of arguments of each method/function
+ * @return String $url_Param with the place where to find the result
+ */
+function execute_Method($MethodName, $institute, array $Parameters){
+
+    if ($GLOBALS['institute'] !== $institute)
+      {
+	$url_Param = execute_ExternalMethod($GLOBALS['servers'][$institute],
+					    $MethodName,
+					    $Parameters);
+      }
+    else
+      {
+	$url_Param = execute_InternalMethod($MethodName, $Parameters);
+      }
+
+    return $url_Param;
+}
+
+
 
 ?>

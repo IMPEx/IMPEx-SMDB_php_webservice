@@ -9,6 +9,10 @@ $local_functions = array('fmi' => 'fmi/local_functions_fmi.php',
 $tree_url = array('fmi' => 'http://impex-fp7.fmi.fi/ws/FMI_HYB_tree.xml',
 		  'latmos' => 'http://impex.latmos.ipsl.fr/tree.xml');
 
+/* WSDL per model */
+$servers = array('fmi' => 'http://impex-fp7.fmi.fi/IMPExServer.php?wsdl',
+		 'latmos' =>'http://impex.latmos.ipsl.fr/IMPExServer.php?wsdl');
+
 $models = array ('fmi' => 'FMI',
 		 'latmos' => 'LATMOS');
 

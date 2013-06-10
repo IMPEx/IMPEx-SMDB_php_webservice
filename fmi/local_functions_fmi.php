@@ -1,6 +1,17 @@
 <?php
 /* Functions that spawn the model wrapper */
 
+$dict_functions = array('getDataPointValue' => 'run_getDataPointValue',
+			'getFieldLine' => 'run_getFieldLine',
+			'getDataPointValue_spacecraft' => 'run_getDataPointValue_spacecraft',
+			'getDataPointSpectra' => 'run_getDataPointSpectra',
+			'getSurface' => 'run_getSurface',
+			'getFileURL' => 'run_getFileURL',
+			'getDataPointSpectra_spacecraft' => 'run_getDataPointSpectra_spacecraft',
+			'getParticleTrajectory' => 'run_getParticleTrajectory');
+
+
+
 
 /**
  *
