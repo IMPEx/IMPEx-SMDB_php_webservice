@@ -1,7 +1,7 @@
 IMPEx-SMDB PHP webservice
 =========================
 
-IMPEx is an FP7 project which enables a better interaction between planetary models and data meassured by spacecraft.
+[IMPEx](http://impex-fp7.oeaw.ac.at/) is an FP7 project which enables a better interaction between planetary models and data meassured by spacecraft.
 
 This repository is aimed to the Data Model providers and not to the end user.
 
