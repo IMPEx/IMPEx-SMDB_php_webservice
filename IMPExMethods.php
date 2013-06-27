@@ -17,6 +17,7 @@
 require('config.php');
 require_once('extra_functions.php');
 require_once($local_functions[$institute]);
+require_once('complex_types.php');
 
 
 class IMPExMethods {
@@ -154,7 +155,7 @@ class IMPExMethods {
    * @param String $ResourceID
    * @param String $Variable
    * @param String $Spacecraft_name
-   * @param String $StartTime - it should be time input
+   * @param startDate $StartTime - it should be time input
    * @param String $StopTime
    * @param String $Sampling - (iso8601)
    * @param Float $IMFClockAngle (default 0)

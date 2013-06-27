@@ -33,6 +33,11 @@ function run_getFieldLine($ResourceID, $Variable,
 			  $MaxSteps, $StopCondition_Radius,
 			  $StopCondition_Region, $OutputFileType,
 			  $IMFClockAngle, $url_XYZ){
+
+
+  /* ssh $ex_server 'wget ... $path/file' */
+  /* ssh $ex_server 'python... ' */
+  /* scp $ex_server:$path/$file /outpath/ */
   return true;
 }
 
