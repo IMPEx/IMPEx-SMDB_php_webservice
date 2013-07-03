@@ -3,7 +3,7 @@ __email__ = "dps.helio-?-gmail.com"
 
 import argparse
 import sys
-import pyhc
+import hcpy
 import numpy as np
 import astropy.io.votable as votable
 
@@ -54,32 +54,27 @@ class Fieldtrack(object):
     
     def __init__(self, hcfilename, 
                  stop_minradius=0, stop_box=None):
-        hc = pyhc.PGrid()
-        self.hc = hc
+#        hc = hcpy(hcfilename)
+#        self.hc = hc
         try:
-            self.hc.open(hcfilename)
+            self.hc = hcpy.HCpy(hcfilename)
         except:
             print "Unexpected error:", sys.exc_info()[0]
             raise
         self.stop_minradius = stop_minradius
-        model_stop_box = [hc.xmin0(), hc.xmax0(), 
-                          hc.xmin1(), hc.xmax1(),
-                          hc.xmin2(), hc.xmax2()]
         if stop_box is None:
-            stop_box = model_stop_box
+            stop_box = self.hc.box
         try:
             stop_box = np.array(stop_box).reshape(3,2)
         except ValueError as e:
             print 'stop_box does not have the right dimension ', e
 
-        model_stop_box = np.array(model_stop_box).reshape(3,2)
-
         #  Create a boolean array which contains the values within
         # model box
-        box_bool = np.array([stop_box[:,0] >= model_stop_box[:,0], 
-                             stop_box[:,1] <= model_stop_box[:,1]]).transpose()
+        box_bool = np.array([stop_box[:,0] >= self.hc.box[:,0], 
+                             stop_box[:,1] <= self.hc.box[:,1]]).transpose()
         # Now, stop_box contains the limits within the box
-        self.stop_box = stop_box * box_bool + model_stop_box * ~box_bool
+        self.stop_box = stop_box * box_bool + self.hc.box * ~box_bool
 
 
     def track(self, points, vectorfield, stepsize=1, maxstep=1,
@@ -112,7 +107,7 @@ class Fieldtrack(object):
 
     def follow_point(self, initpoint, point0, stepsize):
         x = initpoint
-        intpol3d = lambda v: self.hc.intpol(x[0], x[1], x[2], v)
+        intpol3d = lambda v: self.hc.hcintpol([x[0]], [x[1]], [x[2]], [v])
         F = map(intpol3d, vectors)
         if np.dot(F, F) == 0:
             return False

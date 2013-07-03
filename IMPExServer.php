@@ -2,6 +2,7 @@
 require_once('Zend/Soap/AutoDiscover.php');
 require_once('Zend/Soap/Server.php');
 require_once('Zend/Soap/Wsdl.php');
+require_once('Zend/Soap/Wsdl/Strategy/ArrayOfTypeComplex.php');
 require_once('IMPExMethods.php');
 $wsdl = new Zend_Soap_Autodiscover('Zend_Soap_Wsdl_Strategy_ArrayOfTypeComplex');
 $wsdl->setClass('IMPExMethods');

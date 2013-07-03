@@ -66,7 +66,7 @@ class IMPExMethods {
 			$InterpolationMethod,
 			$OutputFileType);
     $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
-				$Parameters,);
+				$Parameters);
     /* TODO: return error message if file/url not created */
     return $url_Param;
   }
@@ -144,7 +144,7 @@ class IMPExMethods {
 			$url_XYZ);
 
     $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
-				$Parameters,);
+				$Parameters);
     /* TODO: return error message if file/url not created */
     return $url_Param;
   }
