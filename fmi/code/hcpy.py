@@ -10,6 +10,7 @@ class HCpy(object):
         limits = ['xmin0','xmax0', 'xmin1', 'xmax1', 'xmin2', 'xmax2']
         self.box = np.array([float(self.hcdict[x]) for x in limits]). \
                    reshape(3,2)
+        self.variables = self._extractvariables(filename)
 
     def _read(self, filename):
         hcfile = open(filename, 'r')
@@ -28,6 +29,20 @@ class HCpy(object):
         g = lambda line: line.replace(' ','').split('=')
         return {g(line)[0]: g(line)[1] for line in header_nocomm}
         
+    def _extractvariables(self, filename):
+        cmd = 'hcintpol ' + filename
+        # Execute the hc command with just an empty string 
+        hc_in = subprocess.Popen(cmd, shell=True, 
+                                 stdout=subprocess.PIPE, 
+                                 stdin=subprocess.PIPE)
+        variables, error = hc_in.communicate('\n')
+        try:
+            variables_list = variables[1:].split()
+        except:
+            print('something went wrong calling hcintpol')
+            raise
+        return variables_list[3:]
+
 
     def hcintpol(self, x, y, z, variables=None, linear=True):
         '''
@@ -46,7 +61,7 @@ class HCpy(object):
         # check whether a list as input
         try:
             for i,j,k in izip(x, y, z):
-                coordinates += '{0:e}, {1:e}, {2:e}\n'.format(i, j, k)
+                coordinates += '{0:e} {1:e} {2:e}\n'.format(i, j, k)
         except TypeError:
             print('inputs x,y and z need to be a list\n')
         except:

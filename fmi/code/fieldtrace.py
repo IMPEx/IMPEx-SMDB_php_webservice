@@ -88,26 +88,30 @@ class Fieldtrack(object):
 
         vectors = [vectorfield+x for x in ['x', 'y', 'z']]
 
-        track_points = np.empty((maxstep, 3))
+        track_points = np.empty((maxstep+1, 3))
 
         track_points[0,:] = np.array(points)
         # midpoint implementation
         for n in range(maxstep):
             # Calculate the Vector direction for half of the step
-            midpoint = follow_point(track_points[n,:],track_points[n,:], 0.5 * self.stepsize * direction_sign[direction])
-            if midpoint is False or not self.within(midpoint):
+            midpoint = self.follow_point(track_points[n,:], track_points[n,:], 
+                                         0.5 * self.stepsize * direction_sign[direction], 
+                                         vectors)
+            if midpoint is False or not self._within(midpoint):
                 break
             #  Apply midpoint direction to original point.
-            endpoint = follow_point(midpoint, track_points[n,:], self.stepsize * direction_sign[direction])
-            if endpoint is False or not self.within(endpoint):
+            endpoint = self.follow_point(midpoint, track_points[n,:], 
+                                         self.stepsize * direction_sign[direction], 
+                                         vectors)
+            if endpoint is False or not self._within(endpoint):
                 break
             track_points[n + 1, :] = endpoint
-        return track_points[:n,:]
+        return track_points[:n+1,:]
 
 
-    def follow_point(self, initpoint, point0, stepsize):
+    def follow_point(self, initpoint, point0, stepsize, vectors):
         x = initpoint
-        intpol3d = lambda v: self.hc.hcintpol([x[0]], [x[1]], [x[2]], [v])
+        intpol3d = lambda v: self.hc.hcintpol([x[0]], [x[1]], [x[2]], [v], linear=False)[v][0]
         F = map(intpol3d, vectors)
         if np.dot(F, F) == 0:
             return False
@@ -115,7 +119,7 @@ class Fieldtrack(object):
         return point0 + F * stepsize
 
 
-    def within(self, points):
+    def _within(self, points):
         ''' Check whether the point is within boundaries'''
         result = True
         for idx,element in enumerate(points):
@@ -127,7 +131,7 @@ class Fieldtrack(object):
         
 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=('Calculates a fieldlines '
                                                   'from an hc model and a list '
                                                   'of starting points.'))
