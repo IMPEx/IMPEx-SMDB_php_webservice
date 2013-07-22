@@ -30,7 +30,7 @@ void die(const char *message)
   if(errno) {
     perror(message);
   } else {
-    printf("ERROR: %s\n", message); // TODO -> print in the error
+    fprintf(stderr, "ERROR: %s\n", message); // TODO -> print in the error "ERROR: %s\n",
   }
   exit(1);
 }
@@ -131,6 +131,7 @@ struct Xcoord normal_vector(struct Xcoord X)
 {
   double modulus;
   modulus = sqrt((X.x * X.x) + (X.y * X.y) + (X.z * X.z));
+  //printf("Normal vector: %g, %g, %g\n",  X.x, X.y, X.z);
   if(modulus == 0) {
     die("Bad vector");
   } else {
@@ -187,26 +188,90 @@ void midpoint(struct Xcoord X0, struct Box Box)
   // return value
 }
 
+void usage()
+{
+  char *usage = "usage: ft [-z] [-r r0] [-l x0,x1,y0,y1,z0,z1] [-ms max_step] [-ss step_size] [-b] var x,y,z hcfile [> output] \n";
+  die(usage);
+}
 
 int main(int argc, char *argv[])
 {
+  // Read input arguments in the 
+  if(argc < 4) usage();
+  int argv_pos = 1;
+  int intpol_order = 1;  // 1 = linear, 0 = zeroth order
+  double input_radius = 0;
+  int scanret; 
+  bool input_box = false;
+  float x0=0, x1=0, y0=0, y1=0, z0=0, z1=0;
+  float x=0, y=0, z=0;
+  char *var_input = "";
+  char *hcfile = "";
+  bool info = true;
+  // set input starting box  
+  struct Xcoord xmin = {.x = x0, .y = y0, .z = z0};
+  struct Xcoord xmax = {.x = x1, .y = y1, .z = z1};
+  // set max points and stepsize
+  int max_steps = 400; 
+  double stepsize = 40000;
+  int stepsize_direction = 1;
 
-  // set input starting point  // read from argv
-  struct Xcoord p0 = {.x = 3000000, .y = 0, .z = 0};
+  while(!strcmp(argv[argv_pos], "-z") ||  // there's -z? 
+	!strcmp(argv[argv_pos], "-r") ||
+	!strcmp(argv[argv_pos], "-l") ||
+	!strcmp(argv[argv_pos], "-ms")||
+	!strcmp(argv[argv_pos], "-ss")||
+	!strcmp(argv[argv_pos], "-b")) {
+    if(!strcmp(argv[argv_pos], "-z")) {
+      intpol_order = 0;
+      argv_pos++;
+    } else if(!strcmp(argv[argv_pos], "-r")) {
+      input_radius = atof(argv[argv_pos+1]);
+      argv_pos += 2;
+    } else if(!strcmp(argv[argv_pos], "-l")) {
+      input_box = true;
+      // separate the string into the values
+      scanret = sscanf(argv[argv_pos+1], "%f,%f,%f,%f,%f,%f", 
+		       &x0, &x1, &y0, &y1, &z0, &z1);
+      if(scanret != 6) die("Not valid coordinates as limits");
+      xmin = {.x = x0, .y = y0, .z = z0};
+      xmax = {.x = x1, .y = y1, .z = z1};
+      argv_pos += 2;
+    } else if(!strcmp(argv[argv_pos], "-ms")) {
+      max_steps = atoi(argv[argv_pos + 1]);
+      argv_pos += 2;
+    } else if(!strcmp(argv[argv_pos], "-ss")) {
+      stepsize = atof(argv[argv_pos + 1]);
+      argv_pos += 2;
+    } else if(!strcmp(argv[argv_pos], "-b")) {
+      stepsize_direction = -1;
+      argv_pos++;
+    }
+  }
 
-  // set input starting box  // read from argv
-  struct Xcoord xmin = {.x = -30000000, .y = -300000000, .z = -300000000};
-  struct Xcoord xmax = {.x = 30000000, .y = 30000000, .z = 30000000};
+  stepsize *= stepsize_direction;
+
+  // read compulsary inputs
+  if(argc - argv_pos == 3) {
+    var_input = argv[argv_pos]; //"j"; // read from argv
+    scanret = sscanf(argv[argv_pos + 1], "%f , %f , %f", &x, &y, &z);
+    if(scanret != 3) die("Not valid coordinates as starting point");
+    hcfile = argv[argv_pos+2];
+  } else usage();
+
+  // Box for limits
   struct Box boxy = { .bmin = xmin, .bmax = xmax, .radius = 1};
+  
+  // set input starting point  // read from argv
+  struct Xcoord p0 = {.x = x, .y = y, .z = z};
+
 
   // set input variable; from B to Bx, By, Bz
-  char *var_input = "j"; // read from argv
+ 
   char *varlist = 0;
 
   varlist = buildvarlist(var_input);
-  char *varnames[MAX_VARS];   /*= {"rho", "B0", "B1", "n", "A", "B",
-			      "Bx0", "Bx1", "By0", "By1", "Bz0",
-			      "Bz1", "rhovx", "rhovy", "rhoz"}; */
+  char *varnames[MAX_VARS];
   int i, j;
   
   Tvariable var; 
@@ -217,16 +282,16 @@ int main(int argc, char *argv[])
   }
   
   int *varpos = variablesMask(nvarnames, varnames, varlist);
-
+  /* 
   printf("varpos[0] = %d\n", varpos[0]);
   for(i = 1; i <= varpos[0]; i++){
     printf("%s was asked as %d and it has position %d\n", varnames[varpos[i]], i, varpos[i]);
   }
-  
+  */
   if(varpos[0] != 3) die("You've got more or less variables than needed");
   
   // READ file
-  char *hcfile = "/home/perezsua/H+_hybstate_00575000.hc";
+  //hcfile = "/home/perezsua/H+_hybstate_00575000.hc";
   TGridCache gridcache;
   double Gamma, Invmu0, Mass;
   bool Pseudobackground;
@@ -237,33 +302,40 @@ int main(int argc, char *argv[])
   // Update box
   double amin[3], amax[3];
   g.getbox(amin, amax);
-  if(boxy.bmin.x > amin[0]) boxy.bmin.x = amin[0];
-  if(boxy.bmin.y > amin[1]) boxy.bmin.y = amin[1];
-  if(boxy.bmin.z > amin[2]) boxy.bmin.z = amin[2];
-  if(boxy.bmax.x > amax[0]) boxy.bmax.x = amax[0];
-  if(boxy.bmax.y > amax[1]) boxy.bmax.y = amax[1];
-  if(boxy.bmax.z > amax[2]) boxy.bmax.z = amax[2];
+  if(boxy.bmin.x < amin[0] || !input_box) boxy.bmin.x = amin[0];
+  if(boxy.bmin.y < amin[1] || !input_box) boxy.bmin.y = amin[1];
+  if(boxy.bmin.z < amin[2] || !input_box) boxy.bmin.z = amin[2];
+  if(boxy.bmax.x > amax[0] || !input_box) boxy.bmax.x = amax[0];
+  if(boxy.bmax.y > amax[1] || !input_box) boxy.bmax.y = amax[1];
+  if(boxy.bmax.z > amax[2] || !input_box) boxy.bmax.z = amax[2];
 
-
-  int max_points = 400; //TODO: needs to be read from argv
-  double step = 40000; // TODO: needs to be read from argv
-  /* TODO: if backward -> step = -step */
+  if(info) {
+    printf("# The variables computed are: %s, %s, %s\n", varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
+    printf("# The input variables are: %g, %g, %g\n", x, y, z);
+    printf("# The hcfile is %s\n", hcfile);
+    printf("# The cube limits are:\t #x \t y \t z \n# \t\t min: \t %g \t %g \t %g \n# \t\t max: \t %g \t %g \t %g \n", boxy.bmin.x, boxy.bmin.y, boxy.bmin.z, boxy.bmax.x, boxy.bmax.y, boxy.bmax.z);
+    printf("# The min radius used: %f \n", input_radius);
+    printf("# Interpolating at the %dth order\n", intpol_order);
+    printf("# There's going to be a max of %d steps with a %.1f stepsize\n", max_steps, stepsize);
+  }
 
   double field_a[3];
   struct Xcoord field;
   struct Xcoord mp;
 
+  printf("# x    y    z\n");
   // start point 0; 
   // inside box?
   if(!withinbox(p0, boxy)) die("Points outside boundaries");
   printf("%g %g %g\n",p0.x, p0.y, p0.z);
 
-  for(i = 0; i <= max_points; i++) {
+  for(i = 0; i <= max_steps; i++) {
     //printf("It seems working so far\n");
     // get field value
     Tdimvec X(p0.x, p0.y, p0.z);
-    for(j = 1; j <= varpos[0]; j++){
-      if(!g.intpol(X, 1, true)) { /* TODO: add order from linear or not */
+    for(j = 1; j <= varpos[0]; j++){    // TODO: Isn't better if I do the intpol outside the loop?
+      
+      if(!g.intpol(X, intpol_order, true)) { 
 	die("the point is wrong");
       } else {
 	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
@@ -271,15 +343,16 @@ int main(int argc, char *argv[])
       }
     }
     field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
-    
+    //printf(" field result: %g, %g, %g\n", field.x, field.y, field.z);
     // get mp and 
-    mp = follow_point(p0, field, step/2);
+    mp = follow_point(p0, field, stepsize/2);
+    //printf(" mid_point = %g, %g, %g\n", mp.x, mp.y, mp.z);
     // inside box?
     if(!withinbox(p0, boxy)) die("Points outside boundaries");
     // get field value for mp
     Tdimvec Y(mp.x, mp.y, mp.z);
     for(j = 1; j <= varpos[0]; j++){
-      if(!g.intpol(Y, 1, true)) {
+      if(!g.intpol(Y, intpol_order, true)) {
 	die("the point is wrong");
       } else {
 	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
@@ -289,7 +362,7 @@ int main(int argc, char *argv[])
     field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
 
     // get final point
-    p0 = follow_point(p0, field, step);
+    p0 = follow_point(p0, field, stepsize);
 
     // inside box?
     if(!withinbox(p0, boxy)) die("Points outside boundaries");
