@@ -333,11 +333,10 @@ int main(int argc, char *argv[])
     //printf("It seems working so far\n");
     // get field value
     Tdimvec X(p0.x, p0.y, p0.z);
-    for(j = 1; j <= varpos[0]; j++){    // TODO: Isn't better if I do the intpol outside the loop?
-      
-      if(!g.intpol(X, intpol_order, true)) { 
-	die("the point is wrong");
-      } else {
+    if(!g.intpol(X,intpol_order, true)) {
+      die("the point is wrong");
+    } else {
+      for(j = 1; j <= varpos[0]; j++){  
 	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
 	field_a[j-1] = var.get(g, X);
       }
@@ -351,10 +350,10 @@ int main(int argc, char *argv[])
     if(!withinbox(p0, boxy)) die("Points outside boundaries");
     // get field value for mp
     Tdimvec Y(mp.x, mp.y, mp.z);
-    for(j = 1; j <= varpos[0]; j++){
-      if(!g.intpol(Y, intpol_order, true)) {
-	die("the point is wrong");
-      } else {
+    if(!g.intpol(Y, intpol_order, true)) {
+      die("the point is wrong");
+    } else {
+      for(j = 1; j <= varpos[0]; j++){
 	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
 	field_a[j-1] = var.get(g, Y);
       }
