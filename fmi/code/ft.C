@@ -133,7 +133,7 @@ struct Xcoord normal_vector(struct Xcoord X)
   modulus = sqrt((X.x * X.x) + (X.y * X.y) + (X.z * X.z));
   //printf("Normal vector: %g, %g, %g\n",  X.x, X.y, X.z);
   if(modulus == 0) {
-    die("Bad vector");
+    die("Null Vector");
   } else {
     X.x /= modulus;
     X.y /= modulus;
@@ -145,7 +145,6 @@ struct Xcoord normal_vector(struct Xcoord X)
 struct Xcoord follow_point(
 			   struct Xcoord X0, 
 			   struct Xcoord field, 
-			   //struct Xcoord field,
 			   int stepsize)
 {
   struct Xcoord pout;
@@ -323,12 +322,12 @@ int main(int argc, char *argv[])
   struct Xcoord field;
   struct Xcoord mp;
 
-  printf("# x    y    z\n");
+  printf("# x     y     z      %s     %s     %s\n",varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
   // start point 0; 
   // inside box?
   if(!withinbox(p0, boxy)) die("Points outside boundaries");
-  printf("%g %g %g\n",p0.x, p0.y, p0.z);
-
+  //printf("%g %g %g",p0.x, p0.y, p0.z);
+  
   for(i = 0; i <= max_steps; i++) {
     //printf("It seems working so far\n");
     // get field value
@@ -342,7 +341,7 @@ int main(int argc, char *argv[])
       }
     }
     field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
-    //printf(" field result: %g, %g, %g\n", field.x, field.y, field.z);
+    printf("%g %g %g %g %g %g\n",p0.x, p0.y, p0.z , field.x, field.y, field.z);
     // get mp and 
     mp = follow_point(p0, field, stepsize/2);
     //printf(" mid_point = %g, %g, %g\n", mp.x, mp.y, mp.z);
@@ -366,7 +365,7 @@ int main(int argc, char *argv[])
     // inside box?
     if(!withinbox(p0, boxy)) die("Points outside boundaries");
     // print value
-    printf("%g %g %g\n",p0.x, p0.y, p0.z);
+    //printf("%g %g %g",p0.x, p0.y, p0.z);
   }
 
   return 0;
