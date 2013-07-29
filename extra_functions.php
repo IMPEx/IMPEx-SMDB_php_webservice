@@ -136,6 +136,11 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
     {
       if ($entry->ResourceID == $ResourceID)
 	{
+	  try {
+	    $productkey = $entry->AccessInformation->AccessURL->ProductKey; // used as filename in FMI -TODO: same for the rest?
+	  } catch (Exception $e) {
+	    $productkey = '';
+	  }
 	  $parameters = array();
 	  foreach ($entry->Parameter as $param)
 	    {
@@ -170,7 +175,8 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 			       'gridSize' => $gridcellsize,
 			       'coordinates' => $coordinates_order,
 			       'valid_min' => $valid_min,
-			       'valid_max' => $valid_max);
+			       'valid_max' => $valid_max,
+			       'ProductKey' => $productkey);
   return $resource_properties;
 }
 

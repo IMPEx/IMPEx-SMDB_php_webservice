@@ -64,7 +64,7 @@ class IMPExMethods {
     $Parameters = array($ResourceID, $variables,
 			$url_XYZ, $IMFClockAngle,
 			$InterpolationMethod,
-			$OutputFileType);
+			$OutputFileType, $model_properties);
     $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
 				$Parameters);
     /* TODO: return error message if file/url not created */

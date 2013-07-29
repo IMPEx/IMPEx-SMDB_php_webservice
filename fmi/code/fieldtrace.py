@@ -11,10 +11,13 @@ def vot2points(filename):
     vot = votable.parse_single_table(filename)
     types = ['x', 'y', 'z']
     points = np.empty((vot.nrows, 3))
-    for idx, elem in enumerate(types):
-        column = vot.get_field_by_id_or_name(elem)
-        if column.ucd == 'pos.cartesian.' + elem:
-            points[:, idx] = vot.array[column.ID].data
+    for column in vot.iter_fields_and_params():
+        if column.name.lower() in types:
+            ucd_name = 'pos.cartesian.' + column.name.lower()
+            idx = types.index(column.name.lower())
+            if (column.ucd == ucd_name) or (column.ucd == ucd_name.upper()):
+                point_column = vot.array[column.ID].data * column.unit
+                points[:, idx] = point_column.si.value
     return points
 
 def netcdf2points(filename):

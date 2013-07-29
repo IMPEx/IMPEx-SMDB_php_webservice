@@ -19,8 +19,26 @@ $dict_functions = array('getDataPointValue' => 'run_getDataPointValue',
 function run_getDataPointValue($ResourceID, $variables,
 			       $url_XYZ, $IMFClockAngle,
 			       $InterpolationMethod,
-			       $OutputFiletype){
-  return true;
+			       $OutputFiletype, $properties){
+
+  $data2funct = array('function' => 'getDataPointValue',                     // string
+		      'filename' => $properties['ProductKey'],               // string
+		      'variables' => $variables,                             // list
+		      'input_url' => $url_XYZ,
+		      'order' => $InterpolationMethod,                       // string: 'linear' || 'nearestgridpoint'
+		      'outfmt' => $OutputFiletype)                           // string: 'votable'|| 'netcdf'
+)
+// Execute the python script with the JSON data
+$result = shell_exec('python impex.py ' . escapeshellarg(json_encode($data))); // TODO: set properly path
+
+// Decode the result  -- ERROR Field? => throw a new error; otherwise keep going well :)
+$resultData = json_decode($result, true);
+
+// This will contain: array('fileout' => 'fileout')
+var_dump($resultData);
+//provide url for that fileout
+   // TODO: if out_url exist:   else: throw exception with the errors
+  return $resultData['out_url'];
 }
 
 
