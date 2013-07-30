@@ -13,6 +13,42 @@ from itertools import izip
 import urllib2
 import StringIO
 import tempfile
+import datetime
+
+# Definitions for fields #
+fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m, 'type': 'double', 'size': '1'},
+                'y':     {'name': 'posy', 'ucd': 'pos.cartesian.y', 'units': u.m, 'type': 'double', 'size': '1'},
+                'z':     {'name': 'posz', 'ucd': 'pos.cartesian.z', 'units': u.m, 'type': 'double', 'size': '1'},
+                'rho':   {'name': 'rho', 'ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
+                'n':     {'name': 'n', 'ucd': 'phys.density',    'units': u.m ** -3, 'type': 'double', 'size': '1'},
+                'rhovx': {'name': 'rhovx', 'ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
+                'rhovy': {'name': 'rhovy','ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
+                'rhovz': {'name': 'rhovz','ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
+                'vx' :   {'name': 'vx', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
+                'vy' :   {'name': 'vy', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
+                'vz' :   {'name': 'vz', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
+                'vr' :   {'name': 'vr', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
+                'v'  :   {'name': 'v', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
+                'v2' :   {'name': 'v2', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'}, # What's this velocity?
+                'U'  :   {'name': 'U','ucd': 'phys.energy.density', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
+                'U1' :   {'name': 'U1','ucd': 'phys.energy.density', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
+                'P'  :   {'name': 'P','ucd': 'phys.pressure', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
+                'T'  :   {'name': 'T','ucd': 'phys.temperature', 'units': u.K, 'type': 'double', 'size': '1'},
+                'Bx' :   {'name': 'Bx','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
+                'By' :   {'name': 'By','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
+                'Bz' :   {'name': 'Bz','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
+                'B'  :   {'name': 'B','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
+                'Ex' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
+                'Ey' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
+                'Ez' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
+                'E'  :   {'name': 'E','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'}, 
+                'Time':  {'name': 'Date', 'ucd': 'TIME', 'unit': 'iso-8601', 'type': 'char', 'size': '*'}
+}                            
+
+def query2string(query):
+    finalstring = ''
+    # TODO!
+    return finalstring
 
 def vot2points(filename):
     vot = votable.parse_single_table(filename)
@@ -36,44 +72,19 @@ def points2vot(filename, points_d, query, time = None):
     # as explained in
     # https://astropy.readthedocs.org/en/latest/io/votable/index.html#building-a-new-table-from-scratch
 
-    # Definitions for fields #
-    fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m, 'type': 'double', 'size': '1'},
-                    'y':     {'name': 'posy', 'ucd': 'pos.cartesian.y', 'units': u.m, 'type': 'double', 'size': '1'},
-                    'z':     {'name': 'posz', 'ucd': 'pos.cartesian.z', 'units': u.m, 'type': 'double', 'size': '1'},
-                    'rho':   {'name': 'rho', 'ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'n':     {'name': 'n', 'ucd': 'phys.density',    'units': u.m ** -3, 'type': 'double', 'size': '1'},
-                    'rhovx': {'name': 'rhovx', 'ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'rhovy': {'name': 'rhovy','ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'rhovz': {'name': 'rhovz','ucd': 'phys.density',    'units': u.kilogram / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'vx' :   {'name': 'vx', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
-                    'vy' :   {'name': 'vy', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
-                    'vz' :   {'name': 'vz', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
-                    'vr' :   {'name': 'vr', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
-                    'v'  :   {'name': 'v', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'},
-                    'v2' :   {'name': 'v2', 'ucd': 'phys.veloc',      'units': u.m / u.s, 'type': 'double', 'size': '1'}, # What's this velocity?
-                    'U'  :   {'name': 'U','ucd': 'phys.energy.density', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'U1' :   {'name': 'U1','ucd': 'phys.energy.density', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'P'  :   {'name': 'P','ucd': 'phys.pressure', 'units': u.J / u.m ** 3, 'type': 'double', 'size': '1'},
-                    'T'  :   {'name': 'T','ucd': 'phys.temperature', 'units': u.K, 'type': 'double', 'size': '1'},
-                    'Bx' :   {'name': 'Bx','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
-                    'By' :   {'name': 'By','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
-                    'Bz' :   {'name': 'Bz','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
-                    'B'  :   {'name': 'B','ucd': 'phys.magField', 'units': u.T, 'type': 'double', 'size': '1'},
-                    'Ex' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
-                    'Ey' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
-                    'Ez' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
-                    'E'  :   {'name': 'E','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'}, 
-                    'Time':  {'name': 'Date', 'ucd': 'TIME', 'unit': 'iso-8601', 'type': 'char', 'size': '*'}
-                }                            
-
-
-
     vot = votable.tree.VOTableFile()
 
     resource = votable.tree.Resource()
     vot.resources.append(resource)
+
+    # Query information
     # TODO: add information for the input (query)
+    params = votable.tree.Param(vot, 'Query', arraysize = '*')
+    resource.params.append(params)
+
+    params.description = query2string(query)
     
+    # Tabular information
     table = votable.tree.Table(vot)
     resource.tables.append(table)
 
@@ -100,6 +111,27 @@ def points2vot(filename, points_d, query, time = None):
             table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
 
     vot.to_xml(filename)
+
+def points2netcdf(filename, points_d, query, time = None):
+    f = netcdf.netcdf_file(filename, 'w')
+    f.history = query2string(query)
+
+    if time is not None:
+        # convert time to seconds from first point
+        iso8601_fmt = '%Y-%m-%dT%H:%M:%S.%f'
+        f.createDimension('time', len(time))
+        time_n = f.createVariable('time', 'd', ('time',))
+        time_n.units = 'Seconds since ' + time[0]
+        time = [datetime.datetime.strptime(x, iso8601_fmt) for x in time]
+        time_n[:] = [(x-time[0]).total_seconds()  for x in time] 
+    
+    dim = 'dim'
+    f.createDimension(dim, len(points_d[points_d.keys()[0])))
+    for key,value in points_d:
+        key_n = f.createVariable(fields_props[key]['name'], fields_props[key]['type'],(dim,))
+        key_n.units = fields_props[key]['units'].to_string()
+        key_n[:] = value
+    f.close()
 
 
 def hcintpol(filename, x, y, z, variables=None, linear=True):
