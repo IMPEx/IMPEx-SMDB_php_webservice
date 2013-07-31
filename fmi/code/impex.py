@@ -46,8 +46,12 @@ fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m
 }                            
 
 def query2string(query):
-    finalstring = ''
+    finalstring = 'Result provided by impex-fp7 project with query:\n '
     # TODO!
+    for key in query:
+        finalstring += key + ': ' + str(query[key]) + '\n '
+    
+    finalstring += ' == Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
     return finalstring
 
 def vot2points(filename):
@@ -217,7 +221,7 @@ def getDataPointValue(dict_input):
     # - Create file
     outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = config.diroutput, suffix = '.'+dict_input['OutputFiletype'])
     outfile.close()
-    write_file[dict_input['OutputFiletype']](outfile.name, result, dictionary)
+    write_file[dict_input['OutputFiletype']](outfile.name, result, dict_input)
     # outfile to URL
     outjson['out_url'] = config.httpoutput +'/'+ os.path.basename(outfile)
     return outjson
