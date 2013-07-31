@@ -26,10 +26,10 @@ function run_getDataPointValue($ResourceID, $variables,
 		      'variables' => $variables,                             // list
 		      'input_url' => $url_XYZ,
 		      'order' => $InterpolationMethod,                       // string: 'linear' || 'nearestgridpoint'
-		      'outfmt' => $OutputFiletype)                           // string: 'votable'|| 'netcdf'
-)
+		      'outfmt' => $OutputFiletype);                          // string: 'votable'|| 'netcdf'
+
 // Execute the python script with the JSON data
-$result = shell_exec('python impex.py ' . escapeshellarg(json_encode($data))); // TODO: set properly path
+$result = shell_exec('python impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
 
 // Decode the result  -- ERROR Field? => throw a new error; otherwise keep going well :)
 $resultData = json_decode($result, true);

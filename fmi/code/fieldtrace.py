@@ -91,7 +91,7 @@ class Fieldtrack(object):
 
         vectors = [vectorfield+x for x in ['x', 'y', 'z']]
 
-        track_points = np.empty((maxstep+1, 3))
+        track_points = np.empty((maxstep + 1, 3))
 
         track_points[0,:] = np.array(points)
         # midpoint implementation
@@ -109,7 +109,7 @@ class Fieldtrack(object):
             if endpoint is False or not self._within(endpoint):
                 break
             track_points[n + 1, :] = endpoint
-        return track_points[:n+1,:]
+        return track_points[:n + 1,:]
 
 
     def follow_point(self, initpoint, point0, stepsize, vectors):

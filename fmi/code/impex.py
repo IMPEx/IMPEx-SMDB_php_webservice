@@ -14,6 +14,10 @@ import urllib2
 import StringIO
 import tempfile
 import datetime
+import ConfigParser
+
+impex_cfg = ConfigParser.RawConfigParser()
+impex_cfg.read(fmi.cfg)
 
 # Definitions for fields #
 fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m, 'type': 'double', 'size': '1'},
@@ -219,11 +223,11 @@ def getDataPointValue(dict_input):
     # write in the fileformat requested
     write_file = {'votable': points2vot, 'netcdf': points2netcdf}
     # - Create file
-    outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = config.diroutput, suffix = '.'+dict_input['OutputFiletype'])
+    outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.'+dict_input['OutputFiletype'])
     outfile.close()
     write_file[dict_input['OutputFiletype']](outfile.name, result, dict_input)
     # outfile to URL
-    outjson['out_url'] = config.httpoutput +'/'+ os.path.basename(outfile)
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outfile)
     return outjson
 def getFieldLine(dict_input):
     pass
