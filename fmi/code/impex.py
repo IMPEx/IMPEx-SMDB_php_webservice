@@ -4,6 +4,7 @@ __email__ = "dps.helio-?-gmail.com"
 import argparse
 import sys
 import os
+import subprocess
 import numpy as np
 import json
 import astropy.io.votable as votable
@@ -17,7 +18,7 @@ import datetime
 import ConfigParser
 
 impex_cfg = ConfigParser.RawConfigParser()
-impex_cfg.read(fmi.cfg)
+impex_cfg.read('fmi.cfg')
 
 # Definitions for fields #
 fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m, 'type': 'double', 'size': '1'},
@@ -50,12 +51,15 @@ fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m
 }                            
 
 def query2string(query):
-    finalstring = 'Result provided by impex-fp7 project with query:\n '
+    finalstring = 'Result provided by impex-fp7 project with query {\n '
     # TODO!
     for key in query:
-        finalstring += key + ': ' + str(query[key]) + '\n '
+        if key == 'variables':
+            finalstring += key + ': ' + ','.join(query[key]) + '\n '
+        else:
+            finalstring += key + ': ' + str(query[key]) + '\n '
     
-    finalstring += ' == Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
+    finalstring += '}\n == Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
     return finalstring
 
 def vot2points(filename):
@@ -134,11 +138,11 @@ def points2netcdf(filename, points_d, query, time = None):
         time_n[:] = [(x-time[0]).total_seconds()  for x in time] 
     
     dim = 'dim'
-    f.createDimension(dim, len(points_d[points_d.keys()[0])))
-    for key,value in points_d:
+    f.createDimension(dim, len(points_d[points_d.keys()[0]]))
+    for key in points_d.keys():
         key_n = f.createVariable(fields_props[key]['name'], fields_props[key]['type'],(dim,))
         key_n.units = fields_props[key]['units'].to_string()
-        key_n[:] = value
+        key_n[:] = points_d[key]
     f.close()
 
 
@@ -208,14 +212,16 @@ def getDataPointValue(dict_input):
         linear = True
     
     # url_XYZ - Get the votable file, download it; process it to [x],[y],[z] ; TODO: Check whther it does not fail
-    response = urllib2.urlopen(url_XYZ)
+    url_XYZ = dict_input['url_XYZ']
+    response = urllib2.urlopen(url_XYZ.replace('\\',''))
     votfile = StringIO.StringIO()
     votfile.write(response.read())
     points = vot2points(votfile)
     x, y, z = points[:,0], points[:,1], points[:, 2]
 
     # Run hcintpol with the the file, coordinates, var and intpol method
-    result = hcintpol(dict_input['filename'], 
+    filename = str(dict_input['filename'])
+    result = hcintpol(filename.replace('\\',''), 
                       x, y, z, 
                       variables=dict_input['variables'], 
                       linear=linear)
@@ -227,7 +233,7 @@ def getDataPointValue(dict_input):
     outfile.close()
     write_file[dict_input['OutputFiletype']](outfile.name, result, dict_input)
     # outfile to URL
-    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outfile)
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outfile.name)
     return outjson
 def getFieldLine(dict_input):
     pass
@@ -264,7 +270,7 @@ if __name__ == '__main__':# Load the data that PHP sent us
 
     # parse the data object to the right function
     try:
-        fileout = function[data['function']](data)
+        fileout = functions[data['function']](data)
     except:
         print('ERROR: Function not recognized')
         sys.exit(1)

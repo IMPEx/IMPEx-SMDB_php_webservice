@@ -22,11 +22,11 @@ function run_getDataPointValue($ResourceID, $variables,
 			       $OutputFiletype, $properties){
 
   $data2funct = array('function' => 'getDataPointValue',                     // string
-		      'filename' => $properties['ProductKey'],               // string
+		      'filename' => $properties['ProductKey'][0],               // string  TODO: FIXME! it produces a list {'0':'file...'} ????
 		      'variables' => $variables,                             // list
-		      'input_url' => $url_XYZ,
+		      'url_XYZ' => $url_XYZ,
 		      'order' => $InterpolationMethod,                       // string: 'linear' || 'nearestgridpoint'
-		      'outfmt' => $OutputFiletype);                          // string: 'votable'|| 'netcdf'
+		      'OutputFiletype' => $OutputFiletype);                          // string: 'votable'|| 'netcdf'
 
 // Execute the python script with the JSON data
 $result = shell_exec('python impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path

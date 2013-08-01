@@ -166,7 +166,7 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 	  
 	}
     }
-  
+  // TODO: this produces some notices in logs because the vars are not defined outside the loop
   $resource_properties = array('resourceID' => $ResourceID,
 			       'institute' => $model_institute,
 			       'parameters' => $parameters,
