@@ -137,7 +137,7 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
       if ($entry->ResourceID == $ResourceID)
 	{
 	  try {
-	    $productkey = $entry->AccessInformation->AccessURL->ProductKey; // used as filename in FMI -TODO: same for the rest?
+	    $productkey = (string)$entry->AccessInformation->AccessURL->ProductKey; // used as filename in FMI -TODO: same for the rest?
 	  } catch (Exception $e) {
 	    $productkey = '';
 	  }

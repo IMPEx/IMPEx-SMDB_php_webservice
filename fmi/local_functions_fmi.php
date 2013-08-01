@@ -22,20 +22,20 @@ function run_getDataPointValue($ResourceID, $variables,
 			       $OutputFiletype, $properties){
 
   $data2funct = array('function' => 'getDataPointValue',                     // string
-		      'filename' => $properties['ProductKey'][0],               // string  TODO: FIXME! it produces a list {'0':'file...'} ????
+		      'filename' => $properties['ProductKey'],               // string  TODO: FIXME! it produces a list {'0':'file...'} ????
 		      'variables' => $variables,                             // list
 		      'url_XYZ' => $url_XYZ,
 		      'order' => $InterpolationMethod,                       // string: 'linear' || 'nearestgridpoint'
 		      'OutputFiletype' => $OutputFiletype);                          // string: 'votable'|| 'netcdf'
 
 // Execute the python script with the JSON data
-$result = shell_exec('python impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
+$result = shell_exec('python fmi/code/impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
 
 // Decode the result  -- ERROR Field? => throw a new error; otherwise keep going well :)
 $resultData = json_decode($result, true);
 
 // This will contain: array('fileout' => 'fileout')
-var_dump($resultData);
+//var_dump($resultData);
 //provide url for that fileout
    // TODO: if out_url exist:   else: throw exception with the errors
   return $resultData['out_url'];
