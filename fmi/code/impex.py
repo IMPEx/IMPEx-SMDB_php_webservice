@@ -18,7 +18,7 @@ import datetime
 import ConfigParser
 
 impex_cfg = ConfigParser.RawConfigParser()
-impex_cfg.read('fmi.cfg')
+impex_cfg.read('fmi/code/fmi.cfg')  # Is there a way to don't parse the path this way?
 
 # Definitions for fields #
 fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m, 'type': 'double', 'size': '1'},
@@ -63,7 +63,7 @@ def query2string(query):
     return finalstring
 
 def vot2points(filename):
-    vot = votable.parse_single_table(filename)
+    vot = votable.parse_single_table(filename, pedantic = False)
     types = ['x', 'y', 'z']
     points = np.empty((vot.nrows, 3))
     for column in vot.iter_fields_and_params():
@@ -151,7 +151,7 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
     x,y,z needs to be a list of numbers, not other type
     variables need to be a list too
     '''
-    cmd = 'hcintpol ' #Note, hcintpol needs to be in the path!
+    cmd = os.path.join(impex_cfg.get('fmi','bindir'),'hcintpol') 
     if linear:
         cmd += ' -z '
     if variables is not None:
@@ -173,20 +173,21 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
     # Execute the command
     hc_in = subprocess.Popen(cmd, shell=True, 
                              stdout=subprocess.PIPE, 
-                             stdin=subprocess.PIPE)
-    interpolatedvalues, error = hc_in.communicate(coordinates)
+                             stdin=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+    interpolatedvalues, error = hc_in.communicate(coordinates) 
 
     # Extract the values as a dictionary {var(x,y,z,rho): [values]}
     for line in interpolatedvalues.splitlines():
         if line[0] == '#':
             variables_list = line[1:].split()
             variables_out = {var: [] for var in variables_list}
-        if line[0] != '#':
+        else:  
             values = line.split()
             for i, var in enumerate(variables_list):
                 variables_out[var].append(float(values[i]))
 
-    return variables_out
+    return variables_out, error
 
 def getDataPointValue(dict_input):
     '''
@@ -221,11 +222,11 @@ def getDataPointValue(dict_input):
 
     # Run hcintpol with the the file, coordinates, var and intpol method
     filename = str(dict_input['filename'])
-    result = hcintpol(filename.replace('\\',''), 
+    result, hcerror = hcintpol(filename.replace('\\',''), 
                       x, y, z, 
                       variables=dict_input['variables'], 
                       linear=linear)
-
+    # TODO, parse hcerror/warnings to the savefile !!!
     # write in the fileformat requested
     write_file = {'votable': points2vot, 'netcdf': points2netcdf}
     # - Create file

@@ -101,6 +101,7 @@ function execute_InternalMethod($MethodName, array $Parameters){
   /* Function to execute */
   $local_Method = $GLOBALS['dict_functions'][$MethodName];
   $result = call_user_func_array($local_Method, $Parameters);
+  return $result;
 }
 /*
    =========================================================

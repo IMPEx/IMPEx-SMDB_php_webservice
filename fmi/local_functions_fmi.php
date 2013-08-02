@@ -29,7 +29,9 @@ function run_getDataPointValue($ResourceID, $variables,
 		      'OutputFiletype' => $OutputFiletype);                          // string: 'votable'|| 'netcdf'
 
 // Execute the python script with the JSON data
-$result = shell_exec('python fmi/code/impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
+// python with "-W ignore" flag to ignore the warning messages that are send to stdout and we then cannot read as json
+// Though it would be nice to report these errors/warnings to the user in any way...
+$result = shell_exec('python -W ignore fmi/code/impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
 
 // Decode the result  -- ERROR Field? => throw a new error; otherwise keep going well :)
 $resultData = json_decode($result, true);
