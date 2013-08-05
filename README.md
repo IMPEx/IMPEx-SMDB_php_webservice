@@ -23,3 +23,13 @@ Contributing
 If you are a SMDB provider and you would like to add your wrapper to the repository to help others, then fork this repository and ask for a Pull Request when your code is ready.
 
 Are you new to git? nothing to worry about! Git is easy. Try [this short tutorial](http://try.github.io/) and you will know how to proceed.  Don't hesitate to ask if you have any doubts.
+
+FMI
+---
+
+FMI has the following requirements:
+
+```scipy >= 0.12, numpy, astropy```
+
+Also, astropy requires that ```$XDG_CONFIG_HOME``` set for the ```www-data``` and the ```$XDG_CONFIG_HOME/astropy``` directory created and accessible by the ```www-data``` user.  This variable is set in: ```/etc/apache2/envvars```.
+
