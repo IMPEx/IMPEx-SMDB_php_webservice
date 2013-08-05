@@ -31,16 +31,18 @@ function run_getDataPointValue($ResourceID, $variables,
 // Execute the python script with the JSON data
 // python with "-W ignore" flag to ignore the warning messages that are send to stdout and we then cannot read as json
 // Though it would be nice to report these errors/warnings to the user in any way...
-$result = shell_exec('python -W ignore fmi/code/impex.py ' . escapeshellarg(json_encode($data2funct))); // TODO: set properly path
+$result = shell_exec('python -W ignore fmi/code/impex.py ' . escapeshellarg(json_encode($data2funct))); 
 
-// Decode the result  -- ERROR Field? => throw a new error; otherwise keep going well :)
+// Decode the result  
 $resultData = json_decode($result, true);
+//- ERROR Field? => throw a new error; otherwise keep going well :)
+if ($resultData['error'] != '')
+  {
+    throw new SoapFault('1', 'Something wrong with the input variables, check: '.$resultData['error']);
+  }
 
-// This will contain: array('fileout' => 'fileout')
-//var_dump($resultData);
 //provide url for that fileout
-   // TODO: if out_url exist:   else: throw exception with the errors
-  return $resultData['out_url'];
+else return $resultData['out_url'];
 }
 
 

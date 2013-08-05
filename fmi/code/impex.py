@@ -226,7 +226,13 @@ def getDataPointValue(dict_input):
                       x, y, z, 
                       variables=dict_input['variables'], 
                       linear=linear)
-    # TODO, parse hcerror/warnings to the savefile !!!
+    if (len(result.keys()) < 4):
+        outjson['error'] = 'ERROR: Unrecognized variable names \n hcintpol message:\n' + hcerror
+        return outjson
+
+    # parse hcerror/warnings to the savefile
+    if (hcerror != ''):
+        dict_input['hc_warnings'] = hcerror
     # write in the fileformat requested
     write_file = {'votable': points2vot, 'netcdf': points2netcdf}
     # - Create file
