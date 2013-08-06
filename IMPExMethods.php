@@ -67,7 +67,7 @@ class IMPExMethods {
 			$OutputFileType, $model_properties);
     $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
 				$Parameters);
-    /* TODO: return error message if file/url not created */
+    // The method executed throws an error message if file/url is not created
     return $url_Param;
   }
 
@@ -132,7 +132,7 @@ class IMPExMethods {
     check_input_url($url_XYZ);
 
     /* RUN external program */
-    /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client?*/
+    /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client*/
     $Parameters = array($ResourceID, $Variable, 
 			$Direction,
 			$StepSize,
@@ -141,11 +141,11 @@ class IMPExMethods {
 			$StopCondition_Region,
 			$OutputFileType,
 			$IMFClockAngle,
-			$url_XYZ);
+			$url_XYZ, $model_properties);
 
     $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
 				$Parameters);
-    /* TODO: return error message if file/url not created */
+    // The method executed throws an error message if file/url is not created
     return $url_Param;
   }
 

@@ -145,6 +145,15 @@ def points2netcdf(filename, points_d, query, time = None):
         key_n[:] = points_d[key]
     f.close()
 
+def _writeout(dict_input, values):
+    # write in the fileformat requested
+    write_file = {'votable': points2vot, 'netcdf': points2netcdf}
+    # - Create file
+    outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.'+dict_input['OutputFiletype'])
+    outfile.close()
+    write_file[dict_input['OutputFiletype']](outfile.name, values, dict_input)
+    # outfile to URL
+    return outfile.name
 
 def hcintpol(filename, x, y, z, variables=None, linear=True):
     '''
@@ -152,7 +161,7 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
     variables need to be a list too
     '''
     cmd = os.path.join(impex_cfg.get('fmi','bindir'),'hcintpol') 
-    if linear:
+    if not linear:
         cmd += ' -z '
     if variables is not None:
         cmd += ' -v '+ ','.join(variables)
@@ -189,17 +198,74 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
 
     return variables_out, error
 
+def hcfieldline(filename, x, y, z, variables = None, radius = 0,
+                stop_box = None, max_step = None, step_size = 1, 
+                direction = 'Forward', linear=True):
+    '''
+    wrapper to call the ft function from hctools.
+    x,y,z:
+    variables: 
+    '''
+
+    cmd = os.path.join(impex_cfg.get('fmi', 'bindir'), 'ft')
+
+    if not linear:
+        cmd += ' -z '
+
+    if direction == 'Backward':
+        cmd += ' -b '
+
+    if radius != 0:
+        cmd += ' -r {:f} '.format(radius)
+
+    if (stop_box is not None):
+        if (len(stop_box) == 6):
+            cmd += ' -l ' + ','.join(str(x) for x in stop_box)
+        else: 
+            raise Exception('stop_box can just work with 6 values')
+    
+    if (max_step is not None):
+        cmd += ' -ms {:d} '.format(max_step)
+
+    if (step_size != 1):
+        cmd += ' -ss {:f} '.format(step_size)
+
+    cmd += variables # FixMe! This assumes a single variable!
+    
+    cmd += '{0:f},{1:f},{2:f}'.format(x, y, z) # FixMe! This assumes a single starting point!
+    
+    cmd += ' ' + filename
+
+    ft_in = subprocess.Popen(cmd, shell=True,
+                             stdout=subprocess.PIPE, 
+                             stdin=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+    fieldline, error = ft_in.communicate(coordinates) 
+             
+    # Extract the 6 columns (coordinates and fields - x,y,z) into a dict
+    for line in fieldline.splitlines():
+        if line[0] == '#':
+            variables_list = line[1:].split()
+            variables_out = {var: [] for var in variables_list}
+        else:  
+            values = line.split()
+            for i, var in enumerate(variables_list):
+                variables_out[var].append(float(values[i]))
+
+    return variables_out, error
+
+
 def getDataPointValue(dict_input):
     '''
     Executes the method with the same name.  The input has to be a dictionary
     with all the parameters needed, they are:
     -function: getDataPointValue
-    -ResourceID: Number from IMPEx
+    -filename: filename (with path) to the requested ResourceID
     -variables: List of variables
     -url_XYZ: url address to the input data
     -IMFClockAngle: Not used here, yet.
     -InterpolationMethod: whether lineal or not
-    -OutputFiletype: which kind (netcdf, votable, csv)
+    -OutputFiletype: which kind (netcdf, votable)
     '''
     outjson = {'out_url':'', 'error':'' }
     # TODO: read config file, paths...
@@ -233,6 +299,8 @@ def getDataPointValue(dict_input):
     # parse hcerror/warnings to the savefile
     if (hcerror != ''):
         dict_input['hc_warnings'] = hcerror
+
+    outname = _writeout(dict_input, result)
     # write in the fileformat requested
     write_file = {'votable': points2vot, 'netcdf': points2netcdf}
     # - Create file
@@ -243,7 +311,62 @@ def getDataPointValue(dict_input):
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outfile.name)
     return outjson
 def getFieldLine(dict_input):
-    pass
+    '''
+    Executes the method with such name. The input needs to be a dictionary with 
+    the following parameters:
+    -function: getFieldLine
+    -filename: filename (with path) to the requested ResourceID
+    -variables: Variable desired to follow the fieldline #todo: what if more than one?
+    -direction: Direction on how to follow the fieldline (forward or backward)
+    -stepsize: Size of the step in m.
+    -maxsteps: Maximum number of steps to follow the field.
+    -stop_radius: Lower limit as radius in m on the simulation box.
+    -stop_box: Edge limits as box coordinates in m: [x0, x1, y0, y1, z0, z1]
+    -url_XYZ: url address to the input data
+    -OutputFiletype: which kind (netcdf, votable)
+
+    Attention, at the moment this works just for one variable and one initial point. 
+    So, it returns just one fieldline.
+
+    Attention, Default is linear interpolation.  If zeroth order required, then need to be implemented in the php!
+    '''
+
+    #TODO: accept zeroth order interpolation
+    outjson = {'out_url':'', 'error':''}
+
+    # Read starting point(s) #TODO: What happens when we get multiple starting points?
+    url_XYZ = dict_input['url_XYZ']
+    response = urllib2.urlopen(url_XYZ.replace('\\',''))
+    votfile = StringIO.StringIO()
+    votfile.write(response.read())
+    points = vot2points(votfile)
+    x, y, z = points[:,0], points[:,1], points[:, 2]
+
+    if (len(x) > 1):
+        x, y, z = x[0], y[0], z[0] # fixme: we should be able to run multiple initial cond.
+
+    # Run fieldline tracer with the the file, coordinates, var and intpol method
+    filename = str(dict_input['filename'])
+    result, hcerror = hcfieldline(filename.replace('\\',''),  #TODO: FIXME, check parms!
+                                  x, y, z, 
+                                  variables=dict_input['variables'], # fixme: what if we have mult vars?
+                                  radius = dict_input['stop_radius'],
+                                  stop_box = dict_input['stop_box'],
+                                  max_step = dict_input['maxsteps'],
+                                  step_size = dict_input['stepsize'],
+                                  direction = dict_input['direction'],
+                                  linear = True)
+    # TODO! Any error message to stop execution? => outjson['error']
+
+    # any other warnings:
+    if (hcerror != ''):
+        dict_input['hc_warnings'] = hcerror
+        
+    outname = _writeout(dict_input, result) #Fixme: if we want to provide multiple input points or variables this needs also to apply.
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
+
+    return outjson
+
 def getDataPointValue_spacecraft(dict_input):
     pass
 def getDataPointSpectra(dict_input):
