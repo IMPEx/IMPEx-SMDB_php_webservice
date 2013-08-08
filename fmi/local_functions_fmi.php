@@ -53,6 +53,7 @@ function run_getDataPointValue($ResourceID, $variables,
 			       $OutputFiletype, $properties){
 
   $data2funct = array('function' => 'getDataPointValue',                     // string
+		      'ResourceID' => $ResourceID,                           // string
 		      'filename' => $properties['ProductKey'],               // string  TODO: FIXME! it produces a list {'0':'file...'} ????
 		      'variables' => $variables,                             // list
 		      'url_XYZ' => $url_XYZ,
@@ -69,7 +70,7 @@ function run_getDataPointValue($ResourceID, $variables,
 /**
  *
  */
-function run_getFieldLine($ResourceID, $Variable, 
+function run_getFieldLine($ResourceID, $variable, 
 			  $Direction, $StepSize,
 			  $MaxSteps, $StopCondition_Radius,
 			  $StopCondition_Region, $OutputFileType,
@@ -77,6 +78,7 @@ function run_getFieldLine($ResourceID, $Variable,
 
 
   $data2funct = array('function' => 'getFieldLine',                          // string
+		      'ResourceID' => $ResourceID,                           // string
 		      'filename' => $properties['ProductKey'],
 		      'variables' => $variable,                              // string
 		      'direction' => $Direction,                             // string: 'backward' || 'forward'

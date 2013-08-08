@@ -24,6 +24,22 @@ function is_numeric_array($array){
 }
 
 /**
+ * array_edges checks if the array a is always smaller than b
+ * @param array $array_a
+ * @param array $array_b
+ */
+function array_edges($array_a, $array_b){
+  foreach ($array_a as $key => $value)
+    {
+      if ($value > $array_b[$key])
+	{
+	  return false;
+	}
+    }
+  return true;
+}
+
+/**
  * url_exists checks whether an url works
  * @param string $url
  * @return bool 
@@ -159,8 +175,8 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 						  (string)$simulation->SimulationDomain->CoordinatesLabel);
 		  $valid_min = preg_split("/[\s,]+/",
 					  (string)$simulation->SimulationDomain->ValidMin);
-		  $valid_max =  preg_split("/[\s,]+/",
-					  (string)$simulation->simulationdomain->ValidMax);
+		  $valid_max = preg_split("/[\s,]+/",
+					  (string)$simulation->SimulationDomain->ValidMax);
 		}
 	    }
 	    
@@ -311,6 +327,7 @@ function check_input_Direction($Direction){
 			      'the possible values [backward or forward]');
 	}
     }
+  return $Direction;
 }
 
 /**
@@ -408,7 +425,7 @@ function check_input_StopCondition_Radius($StopCondition_Radius){
  * @throw SoapFault if (1) wrong format, (2) Out of boundaries, (3) Model boundaries not in model_properties
  */
 function check_input_StopCondition_Region($StopCondition_Region, array $model_properties){
-  if (!is_null($StopCondition_Radius))
+  if (!is_null($StopCondition_Region))
     {
       $StopCondition_Region_array = preg_split("/[\s(,|;)]+/", $StopCondition_Region);
       if (count($StopCondition_Region_array) !== 6)
@@ -417,18 +434,23 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 			      'separated by "," or ";". The region input has '.
 			      count($StopCondition_Region_array).' elements.');
 	}
-      else if (!is_numeric_array($array))
+      else if (!is_numeric_array($StopCondition_Region_array))
 	{
 	  throw new SoapFault('1', 'StopCondition_Region needs 6 float elements');
 	}
+
       $StopCondition_Region = $StopCondition_Region_array; /* so we can return NULL */
       if (array_key_exists('valid_min', $model_properties) AND
 	  array_key_exists('valid_max', $model_properties))
 	{
 	  /* compare input array with model boundaries */
-	  $lower_boundaries = array($StopCondition_Radius[0], $StopCondition_Radius[2], $StopCondition_Radius[4]);
-	  $upper_boundaries = array($StopCondition_Radius[1], $StopCondition_Radius[3], $StopCondition_Radius[5]);
-	  if ($lower_boundaries < $model_properties('valid_min'))
+	  $lower_boundaries = array($StopCondition_Region_array[0], $StopCondition_Region_array[2], $StopCondition_Region_array[4]);
+	  $upper_boundaries = array($StopCondition_Region_array[1], $StopCondition_Region_array[3], $StopCondition_Region_array[5]);
+	  if (!array_edges($lower_boundaries,$upper_boundaries))
+	    {
+	      throw new SoapFault('2', 'The lower boundaries of the region have to be smaller than the upper ones');
+	    }
+	  else if (!array_edges($model_properties['valid_min'],$lower_boundaries))
 	    {
 	      throw new SoapFault('2', 'The lower boundaries (x,y,z) = ['.
 				  implode(",", $lower_boundaries).
@@ -436,7 +458,7 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 				  implode(",", $model_properties['valid_min']).
 				  ']');
 	    }
-	  else if ( $upper_boundaries >  $model_properties('valid_max'))
+	  else if (!array_edges($upper_boundaries, $model_properties['valid_max']))
 	    {
 	      throw new SoapFault('2', 'The upper boundaries (x,y,z) = ['.
 				  implode(",", $upper_boundaries).

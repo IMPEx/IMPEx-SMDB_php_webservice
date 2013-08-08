@@ -55,9 +55,9 @@ def query2string(query):
     # TODO!
     for key in query:
         if key == 'variables':
-            finalstring += key + ': ' + ','.join(query[key]) + '\n '
+            finalstring += key + ': ' + ','.join(query[key]) + ';\n '
         else:
-            finalstring += key + ': ' + str(query[key]) + '\n '
+            finalstring += key + ': ' + str(query[key]) + ';\n '
     
     finalstring += '}\n == Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
     return finalstring
@@ -212,7 +212,7 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
     if not linear:
         cmd += ' -z '
 
-    if direction == 'Backward':
+    if direction.lower() == 'backward':
         cmd += ' -b '
 
     if radius != 0:
@@ -232,15 +232,14 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
 
     cmd += variables # FixMe! This assumes a single variable!
     
-    cmd += '{0:f},{1:f},{2:f}'.format(x, y, z) # FixMe! This assumes a single starting point!
+    cmd += ' {0:f},{1:f},{2:f} '.format(x, y, z) # FixMe! This assumes a single starting point!
     
     cmd += ' ' + filename
 
     ft_in = subprocess.Popen(cmd, shell=True,
                              stdout=subprocess.PIPE, 
-                             stdin=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-    fieldline, error = ft_in.communicate(coordinates) 
+    fieldline, error = ft_in.communicate() 
              
     # Extract the 6 columns (coordinates and fields - x,y,z) into a dict
     for line in fieldline.splitlines():
