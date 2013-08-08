@@ -147,20 +147,20 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 	    {
 	      array_push($parameters, $param->ParameterKey);
 	    }
-	  $resourceIDSimulation = $entry->InputResourceID;
+	  $resourceIDSimulation = (string)$entry->InputResourceID;
 	  foreach ($model->SimulationRun as $simulation)
 	    {
 	      if ($simulation->ResourceID == $resourceIDSimulation)
 		{
-		  $gridstructure = $simulation->SimulationDomain->GridStructure;
+		  $gridstructure = (string)$simulation->SimulationDomain->GridStructure;
 		  $gridcellsize  = preg_split("/[\s,]+/",
-					      $simulation->SimulationDomain->GridCellSize);
+					      (string)$simulation->SimulationDomain->GridCellSize);
 		  $coordinates_order = preg_split("/[\s,]+/",
-						  $simulation->SimulationDomain->CoordinatesLabel);
+						  (string)$simulation->SimulationDomain->CoordinatesLabel);
 		  $valid_min = preg_split("/[\s,]+/",
-					  $simulation->SimulationDomain->ValidMin);
+					  (string)$simulation->SimulationDomain->ValidMin);
 		  $valid_max =  preg_split("/[\s,]+/",
-					  $simulation->simulationdomain->ValidMax);
+					  (string)$simulation->simulationdomain->ValidMax);
 		}
 	    }
 	    
@@ -451,7 +451,7 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 	  throw new SoapFault('3', 'the model boundaries are not available');
 	}
     }
-  /* if NULL return null or valid_min and valid_max? */
+  /* TODO: if NULL return null or valid_min and valid_max? */
   return $StopCondition_Region;
 }
 

@@ -78,7 +78,7 @@ function run_getFieldLine($ResourceID, $Variable,
 
   $data2funct = array('function' => 'getFieldLine',                          // string
 		      'filename' => $properties['ProductKey'],
-		      'variables' => $variables,                             // list
+		      'variables' => $variable,                              // string
 		      'direction' => $Direction,                             // string: 'backward' || 'forward'
 		      'stepsize' => $StepSize,                               // float
                       'maxsteps' => $MaxSteps,                               // integer
@@ -86,7 +86,7 @@ function run_getFieldLine($ResourceID, $Variable,
 		      'stop_box' => $StopCondition_Region,                   // ??
 		      'url_XYZ' => $url_XYZ,
 		      // 'IMFClockAngle' => $IMFClockAngle,                     // float
-		      'OutputFiletype' => $OutputFiletype);                  // string: 'votable'|| 'netcdf'
+		      'OutputFiletype' => $OutputFileType);                  // string: 'votable'|| 'netcdf'
 
   return run_fmi_any($data2funct);
 }
