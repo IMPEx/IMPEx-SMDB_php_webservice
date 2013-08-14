@@ -18,6 +18,7 @@ function run_fmi_any($data){
   // Execute the python script with the JSON data
   // python with "-W ignore" flag to ignore the warning messages that are send to stdout and we then cannot read as json
   // Though it would be nice to report these errors/warnings to the user in any way...
+  // TODO: execute this under try/catch to report an error from the python execution
   $result = shell_exec('python -W ignore fmi/code/impex.py ' . escapeshellarg(json_encode($data))); 
 
   // Decode the result  
@@ -89,6 +90,33 @@ function run_getFieldLine($ResourceID, $variable,
 		      'url_XYZ' => $url_XYZ,
 		      // 'IMFClockAngle' => $IMFClockAngle,                     // float
 		      'OutputFiletype' => $OutputFileType);                  // string: 'votable'|| 'netcdf'
+
+  return run_fmi_any($data2funct);
+}
+
+/**
+ *
+ */
+function run_getParticleTrajectory($ResourceID, 
+				   $Direction, $StepSize,
+				   $MaxSteps, $StopCondition_Radius,
+				   $StopCondition_Region, 
+				   $InterpolationMethod,
+				   $OutputFileType,
+				   $url_XYZ, $properties){
+
+  $data2funct = array('function' => 'getParticleTrajectory',              // string
+		      'properties' => $properties,                        // array/dict
+		      'ResourceID' => $ResourceID,                        // string
+		      'filename' => $properties['ProductKey'],            // string
+		      'direction' => $Direction,                          // string: 'backward' || 'forward'
+		      'stepsize' => $StepSize,                            // float
+		      'maxsteps' => $MaxSteps,                            // integer
+		      'stop_radius' => $StopCondition_Radius,             // float
+		      'stop_box' => $StopCondition_Region,                // list
+		      'order' => $InterpolationMethod,                    // string: 'linear' || 'nearestgridpoint'
+		      'OutputFiletype' => $OutputFileType,
+		      'url_XYZ' => $url_XYZ);
 
   return run_fmi_any($data2funct);
 }

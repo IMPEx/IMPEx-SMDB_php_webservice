@@ -145,6 +145,13 @@ def points2netcdf(filename, points_d, query, time = None):
         key_n[:] = points_d[key]
     f.close()
 
+def _url2points(url):
+    url_XYZ = url
+    response = urllib2.urlopen(url_XYZ.replace('\\',''))
+    votfile = StringIO.StringIO()
+    votfile.write(response.read())
+    return vot2points(votfile)
+
 def _writeout(dict_input, values):
     # write in the fileformat requested
     write_file = {'votable': points2vot, 'netcdf': points2netcdf}
@@ -154,6 +161,74 @@ def _writeout(dict_input, values):
     write_file[dict_input['OutputFiletype']](outfile.name, values, dict_input)
     # outfile to URL
     return outfile.name
+
+def iontracer_writecfg(dict_input, points):
+    '''
+    it writes the config file needed to run the iontracer routine with the 
+    parameters set in the method. 
+    points need to be a list of 3D points.
+    NOTE: Defaults options are hardcoded, by now (though it should be easy to input)
+    '''
+    cfg = ''
+    # HC file, relative mass, relative charge  
+    #Note: iontracer allows more than one, for IMPEx we allow just one at a time.
+    # check whether the mass and charge exists
+    mass, charge = 1, 1
+    if dict_input['properties'].has_key('mass'):
+        mass = np.round(dict_input['properties']['mass'])
+    if dict_input['properties'].has_key('charge'):
+        charge = np.round(dict_input['properties']['charge'])
+
+    cfg += "HCF {file} {mass:.0f} {charge:.0f}\n".format(file = dict_input['filename'].replace('\\',''),
+                                                         mass = mass, 
+                                                         charge = charge)
+
+    cfg += 'FORMATS matlab\n' # This is a ASCII format which we know how to read...
+    cfg += 'OUT_DIR ./\n'     # This should create the file where the config file resides
+
+    cfg += 'TRACEVARS parID\n'  # So we can tied each input point with it's number
+    # Notice the pairs are numbered as: Odd for forward, Even for backwards, so if asks for just forward, then you would get for starting point A, B, C => 1, 3, 5 as IDs.
+
+    cfg += 'BUNEMANVERSION U\n' # Default value when electron pressure is not included.
+    # TODO: This could be define automatically if present on tree.xml file
+
+    cfg += 'DIRECTION {direction}\n'.format(direction = dict_input['direction'].lower())
+    
+    if dict_input['maxsteps'] > 0:
+        cfg += 'MAXSTEPS {steps:.0f}\n'.format(steps = dict_input['maxsteps'])
+    
+    if dict_input['stepsize'] > 0:
+        cfg += 'STEPSIZE {stepsize:.3f}\n'.format(stepsize = dict_input['stepsize'])
+
+    order = {'nearestgridpoint': 0, 'linear': 1}
+    cfg += 'INTPOLORDER {order:.0f}\n'.format(order = order[dict_input['order']])
+
+    cfg += 'VERBOSE 0\n'
+    
+    cfg += 'OVERWRITE 1\n'
+
+    cfg += 'ENDPOINTSONLY 0\n'
+
+    cfg += 'PLANETARY_BOUNDARY {radius:.2f}\n'.format(radius = dict_input['stop_radius'])
+    
+    box_limits = [['XMIN', 0], ['YMIN', 2], ['ZMIN', 4], 
+                  ['XMAX', 1], ['YMAX', 3], ['ZMAX', 5]]
+    for elem in box_limits:
+        cfg += '{label} {value:e}\n'.format(elem[0], dict_input['stop_box'][elem[1]]) 
+
+    cfg += 'EOC\n'
+
+    cfg += '########### INITIAL POINTS SECTION ###########\n'
+    for stpoint in points:
+        cfg += '{0[0]:e} {0[1]:e} {0[2]:e}\n'.format(stpoint)
+    
+    # Create tempfile to write the configuration
+    cfgfile = tempfile.NamedTemporaryFile(mode = '',prefix = 'hwa_ion_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
+    cfgfile.write(cfg)
+    cfgfile.close() # it does not delete the file because delete = False
+
+    return cfgfile.name
+
 
 def hcintpol(filename, x, y, z, variables=None, linear=True):
     '''
@@ -278,11 +353,7 @@ def getDataPointValue(dict_input):
         linear = True
     
     # url_XYZ - Get the votable file, download it; process it to [x],[y],[z] ; TODO: Check whther it does not fail
-    url_XYZ = dict_input['url_XYZ']
-    response = urllib2.urlopen(url_XYZ.replace('\\',''))
-    votfile = StringIO.StringIO()
-    votfile.write(response.read())
-    points = vot2points(votfile)
+    points = _url2points(dict_input['url_XYZ'])
     x, y, z = points[:,0], points[:,1], points[:, 2]
 
     # Run hcintpol with the the file, coordinates, var and intpol method
@@ -327,18 +398,15 @@ def getFieldLine(dict_input):
     Attention, at the moment this works just for one variable and one initial point. 
     So, it returns just one fieldline.
 
-    Attention, Default is linear interpolation.  If zeroth order required, then need to be implemented in the php!
+    Attention, Default is linear interpolation.  If zeroth order required, then need to be implemented in the Method's input (php) and then here!
     '''
 
-    #TODO: accept zeroth order interpolation
+    #TODO: accept zeroth order interpolation?
+    
     outjson = {'out_url':'', 'error':''}
 
+    points = _url2points(dict_input['url_XYZ']
     # Read starting point(s) #TODO: What happens when we get multiple starting points?
-    url_XYZ = dict_input['url_XYZ']
-    response = urllib2.urlopen(url_XYZ.replace('\\',''))
-    votfile = StringIO.StringIO()
-    votfile.write(response.read())
-    points = vot2points(votfile)
     x, y, z = points[:,0], points[:,1], points[:, 2]
 
     if (len(x) > 1):
@@ -377,7 +445,37 @@ def getFileURL(dict_input):
 def getDataPointSpectra_spacecraft(dict_input):
     pass
 def getParticleTrajectory(dict_input):
-    pass
+    '''
+    Gets the particle trajectory for the properties set in the input dictionary.
+    The following parameters are needed:
+    -function: getParticleTrajectory
+    -filename: filename (path included) to the requested ResourceID
+    -direction: Direction on how to follow the particle trajectory (forward or backward)
+    -stepsize: Size of steps in metres
+    -maxsteps: Maximum number of steps to follow the particle
+    -stop_radius: Lower limit as "planet boundary" in metres.
+    -stop_box: Edge limits as box coordinates in m: [x0, x1, y0, y1, z0, z1]
+    -order: whether linear or not (nearestgridpoint)
+    -OutputFiletype: which kind (netcdf, votable)
+    -url_XYZ: url address to the input data
+
+    Attention, at the moment this is plan as single particle.
+    '''
+
+    outjson = {'out_url':'', 'error':''}
+
+    # Get the points from votable
+    points = _url2points(dict_input['url_XYZ'])
+
+    # Write config file in a tmp file
+    ## Define the outdir 
+    cfgfilename = iontracer_writecfg(dict_input, points)
+    # Execute program
+    
+
+
+    # Convert output to format required
+    return outjson
 
 if __name__ == '__main__':# Load the data that PHP sent us
 

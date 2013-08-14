@@ -161,7 +161,9 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 	  $parameters = array();
 	  foreach ($entry->Parameter as $param)
 	    {
-	      array_push($parameters, $param->ParameterKey);
+	      array_push($parameters, $param->ParameterKey); // TODO: FixMe, some values are like: vx,vy,vz
+	      $mass = (float)$param->Particle->PopulationMassNumber;
+	      $charge = (float)$param->Particle->PopulationCharegeState;
 	    }
 	  $resourceIDSimulation = (string)$entry->InputResourceID;
 	  foreach ($model->SimulationRun as $simulation)
@@ -184,9 +186,12 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 	}
     }
   // TODO: this produces some notices in logs because the vars are not defined outside the loop
+  // An option could be to extract the whole XML part and used it everywhere it's needed
   $resource_properties = array('resourceID' => $ResourceID,
 			       'institute' => $model_institute,
 			       'parameters' => $parameters,
+			       'mass' => $mass,
+			       'charge' => $charge,
 			       'resourceIDSimulation' => $resourceIDSimulation,
 			       'gridStructure' => $gridstructure,
 			       'gridSize' => $gridcellsize,
