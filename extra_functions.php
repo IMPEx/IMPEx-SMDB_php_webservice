@@ -393,6 +393,7 @@ function check_input_StepSize($StepSize, array $model_properties){
  * @throw SoapFault if number is not integer
  */
 function check_input_MaxSteps($MaxSteps){
+  //TODO A max value should be set to.
   if (is_null($MaxSteps))
     {
       return 100; /* steps; or maybe Null so it goes till the end?  */
@@ -478,7 +479,12 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 	  throw new SoapFault('3', 'the model boundaries are not available');
 	}
     }
-  /* TODO: if NULL return null or valid_min and valid_max? */
+  else
+    {
+      $StopCondition_Region = array($model_properties['valid_min'][0], $model_properties['valid_max'][0],
+				    $model_properties['valid_min'][1], $model_properties['valid_max'][1],
+				    $model_properties['valid_min'][2], $model_properties['valid_max'][2],);
+    }
   return $StopCondition_Region;
 }
 
