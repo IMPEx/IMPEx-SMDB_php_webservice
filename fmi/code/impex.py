@@ -95,7 +95,39 @@ def points2vot(filename, points_d, query, time = None):
     resource.params.append(params)
 
     params.description = query2string(query)
+
+    # TODO, FIXME! This can be done in less lines!
+    if points_d.has_key('line_00'):
+        for key in points_d.keys(): # line_00, line_01, ...
+            line = points_d[key]
+            table = votable.tree.Table(vot)
+            resource.tables.append(table)
+
+            table.description = key  # line_00, ..
+
+            var = sorted(line.keys())
+            if time is None:
+                var = var[-3:] + var[:-3]
+            else:
+                var = ['Time'] + var[-3:] + var[:-3]
+
+            fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
+                                         arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
+                                         ucd=fields_props[v]['ucd']) for v in var]
+            table.fields.extend(fields)
+
+            # points_d dict to array
+            points_array = np.array([line[x] for x in var]).transpose()
+            table.create_arrays(points_array.shape[0])
     
+            if time is None:
+                points_mask = np.ma.masked_array(points_array, mask = False)
+                table.array = points_mask
+            else:
+                for i, line in enumerate(time):
+                    table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
+
+    else:  # There are just the variables (not lines)
     # Tabular information
     table = votable.tree.Table(vot)
     resource.tables.append(table)
@@ -136,13 +168,24 @@ def points2netcdf(filename, points_d, query, time = None):
         time_n.units = 'Seconds since ' + time[0]
         time = [datetime.datetime.strptime(x, iso8601_fmt) for x in time]
         time_n[:] = [(x-time[0]).total_seconds()  for x in time] 
-    
-    dim = 'dim'
-    f.createDimension(dim, len(points_d[points_d.keys()[0]]))
-    for key in points_d.keys():
-        key_n = f.createVariable(fields_props[key]['name'], fields_props[key]['type'],(dim,))
-        key_n.units = fields_props[key]['units'].to_string()
-        key_n[:] = points_d[key]
+
+    # TODO, FIXME! This can be done in less lines!
+    if points_d.has_key('line_00'):
+        for key in points_d.keys():  #line_00, line_01, ...
+            dim = 'dim_' + key
+            f.createDimension(dim, len(points_d[key]['x']))
+            line = points_d[key]
+            for coord in line.keys():  # x, y, z, ...
+                key_n = f.createVariable(fields_props[coord]['name']+'_'+key, fields_props[coord]['type'],(dim,))
+                key_n.units = fields_props[coord]['units'].to_string()
+                key_n[:] = line[coord]
+    else:
+        dim = 'dim'
+        f.createDimension(dim, len(points_d[points_d.keys()[0]]))
+        for key in points_d.keys():
+            key_n = f.createVariable(fields_props[key]['name'], fields_props[key]['type'],(dim,))
+            key_n.units = fields_props[key]['units'].to_string()
+            key_n[:] = points_d[key]
     f.close()
 
 def _url2points(url):
@@ -159,8 +202,46 @@ def _writeout(dict_input, values):
     outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.'+dict_input['OutputFiletype'])
     outfile.close()
     write_file[dict_input['OutputFiletype']](outfile.name, values, dict_input)
-    # outfile to URL
     return outfile.name
+
+def _table2dict(table):
+    '''
+    It reads an array of lines with space separated values
+    into a dictionary of the header variables
+    '''
+    for line in table:
+        if (line[0] == '%') or (line[0] == '#'):
+            variables_list = line[1:].split()
+            variables_out = {var: [] for var in variables_list}
+        else:  
+            values = line.split()
+            for i, var in enumerate(variables_list):
+                variables_out[var].append(float(values[i]))
+    return variables_out
+
+def _writeout_ion(dict_input, resultfile):
+    #read result file
+    results = open(resultfile)     # TODO: If to do in a general way this should either get a stdout (eg., fieldline tracer)
+    # Extracts {x:[...], y:[...], z:[...], pairID:[...]}
+    variables = _table2dict(results.readlines())
+    results.close()
+
+    # number of ion paths
+    # Each path has a number > 0.  So, we count these pairs > 0
+    # (len(pairs) is always going to be larger than pairID)
+    pairs = variables['parID']
+    ind_paths = [pairs.count(l) for l in range(1, len(pairs))]
+    ion_paths = len(ind_paths) - ind_paths.count(0)
+
+    variables_lines = {'line_{:02d}'.format(x):{} for x in range(ion_paths)}
+    line = 0
+    for elem in ind_paths:
+        if elem != 0:
+            variables_lines['line_{:02d}'.format(line)]={l: [x for i,x in enumerate(variables[l]) if pairs[i] == elem] for l in ['x', 'y', 'z']}
+            line += 1
+
+    return _writeout(dict_input, variables_lines)
+ 
 
 def iontracer_writecfg(dict_input, points):
     '''
@@ -262,15 +343,7 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
     interpolatedvalues, error = hc_in.communicate(coordinates) 
 
     # Extract the values as a dictionary {var(x,y,z,rho): [values]}
-    for line in interpolatedvalues.splitlines():
-        if line[0] == '#':
-            variables_list = line[1:].split()
-            variables_out = {var: [] for var in variables_list}
-        else:  
-            values = line.split()
-            for i, var in enumerate(variables_list):
-                variables_out[var].append(float(values[i]))
-
+    variables_out = _table2dict(interpolatedvalues.splitlines())
     return variables_out, error
 
 def hcfieldline(filename, x, y, z, variables = None, radius = 0,
@@ -317,15 +390,7 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
     fieldline, error = ft_in.communicate() 
              
     # Extract the 6 columns (coordinates and fields - x,y,z) into a dict
-    for line in fieldline.splitlines():
-        if line[0] == '#':
-            variables_list = line[1:].split()
-            variables_out = {var: [] for var in variables_list}
-        else:  
-            values = line.split()
-            for i, var in enumerate(variables_list):
-                variables_out[var].append(float(values[i]))
-
+    variables_out = _table2dict(fieldline.splitlines())
     return variables_out, error
 
 
@@ -371,15 +436,10 @@ def getDataPointValue(dict_input):
         dict_input['hc_warnings'] = hcerror
 
     outname = _writeout(dict_input, result)
-    # write in the fileformat requested
-    write_file = {'votable': points2vot, 'netcdf': points2netcdf}
-    # - Create file
-    outfile = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.'+dict_input['OutputFiletype'])
-    outfile.close()
-    write_file[dict_input['OutputFiletype']](outfile.name, result, dict_input)
     # outfile to URL
-    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outfile.name)
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
     return outjson
+
 def getFieldLine(dict_input):
     '''
     Executes the method with such name. The input needs to be a dictionary with 
@@ -405,7 +465,7 @@ def getFieldLine(dict_input):
     
     outjson = {'out_url':'', 'error':''}
 
-    points = _url2points(dict_input['url_XYZ']
+    points = _url2points(dict_input['url_XYZ'])
     # Read starting point(s) #TODO: What happens when we get multiple starting points?
     x, y, z = points[:,0], points[:,1], points[:, 2]
 
@@ -470,11 +530,20 @@ def getParticleTrajectory(dict_input):
     # Write config file in a tmp file
     ## Define the outdir 
     cfgfilename = iontracer_writecfg(dict_input, points)
+
     # Execute program
-    
+    cmd = os.path.join(impex_cfg.get('fmi','bindir'),'iontracer')
+    cmd += ' ' + cfgfilename
+    iontracer = subprocess.Popen(cmd, shell=True,
+                                 stderr=subprocess.PIPE)
+    ion_ex, ion_error = iontracer.communicate()
+    # What are the execution/error messages to check here?
+    if (ion_error != ''):
+        dict_input['ion_warnings'] = ion_error
 
-
-    # Convert output to format required
+    # Convert the output file to the required format
+    outname = _writeout_ion(dict_input, cfgfilename+'_trace_0.m')
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
     return outjson
 
 if __name__ == '__main__':# Load the data that PHP sent us
