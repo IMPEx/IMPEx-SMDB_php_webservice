@@ -128,31 +128,31 @@ def points2vot(filename, points_d, query, time = None):
                     table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
 
     else:  # There are just the variables (not lines)
-    # Tabular information
-    table = votable.tree.Table(vot)
-    resource.tables.append(table)
+        # Tabular information
+        table = votable.tree.Table(vot)
+        resource.tables.append(table)
 
-    var = sorted(points_d.keys())
-    if time is None:
-        var = var[-3:] + var[:-3]
-    else:
-        var = ['Time'] + var[-3:] + var[:-3]
+        var = sorted(points_d.keys())
+        if time is None:
+            var = var[-3:] + var[:-3]
+        else:
+            var = ['Time'] + var[-3:] + var[:-3]
 
-    fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
-                                 arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
-                                 ucd=fields_props[v]['ucd']) for v in var]
-    table.fields.extend(fields)
+        fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
+                                     arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
+                                     ucd=fields_props[v]['ucd']) for v in var]
+        table.fields.extend(fields)
 
-    # points_d dict to array
-    points_array = np.array([points_d[x] for x in var]).transpose()
-    table.create_arrays(points_array.shape[0])
+        # points_d dict to array
+        points_array = np.array([points_d[x] for x in var]).transpose()
+        table.create_arrays(points_array.shape[0])
         
-    if time is None:
-        points_mask = np.ma.masked_array(points_array, mask = False)
-        table.array = points_mask
-    else:
-        for i, line in enumerate(time):
-            table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
+        if time is None:
+            points_mask = np.ma.masked_array(points_array, mask = False)
+            table.array = points_mask
+        else:
+            for i, line in enumerate(time):
+                table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
 
     vot.to_xml(filename)
 
@@ -302,6 +302,7 @@ def iontracer_writecfg(dict_input, points):
     cfg += '########### INITIAL POINTS SECTION ###########\n'
     for stpoint in points:
         cfg += '{0[0]:e} {0[1]:e} {0[2]:e}\n'.format(stpoint)
+        # TODO! initial v, mass and charge needs to be input
     
     # Create tempfile to write the configuration
     cfgfile = tempfile.NamedTemporaryFile(mode = '',prefix = 'hwa_ion_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
