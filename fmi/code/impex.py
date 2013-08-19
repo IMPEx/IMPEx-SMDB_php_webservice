@@ -98,7 +98,7 @@ def points2vot(filename, points_d, query, time = None):
 
     # TODO, FIXME! This can be done in less lines!
     if points_d.has_key('line_00'):
-        for key in points_d.keys(): # line_00, line_01, ...
+        for key in sorted(points_d.keys()): # line_00, line_01, ...
             line = points_d[key]
             table = votable.tree.Table(vot)
             resource.tables.append(table)
@@ -171,7 +171,7 @@ def points2netcdf(filename, points_d, query, time = None):
 
     # TODO, FIXME! This can be done in less lines!
     if points_d.has_key('line_00'):
-        for key in points_d.keys():  #line_00, line_01, ...
+        for key in sorted(points_d.keys()):  #line_00, line_01, ...
             dim = 'dim_' + key
             f.createDimension(dim, len(points_d[key]['x']))
             line = points_d[key]
@@ -221,7 +221,7 @@ def _table2dict(table):
 
 def _writeout_ion(dict_input, resultfile):
     #read result file
-    results = open(resultfile)     # TODO: If to do in a general way this should either get a stdout (eg., fieldline tracer)
+    results = open(resultfile, 'r')     # TODO: If to do in a general way this should either get a stdout (eg., fieldline tracer)
     # Extracts {x:[...], y:[...], z:[...], pairID:[...]}
     variables = _table2dict(results.readlines())
     results.close()
@@ -230,13 +230,13 @@ def _writeout_ion(dict_input, resultfile):
     # Each path has a number > 0.  So, we count these pairs > 0
     # (len(pairs) is always going to be larger than pairID)
     pairs = variables['parID']
-    ind_paths = [pairs.count(l) for l in range(1, len(pairs))]
-    ion_paths = len(ind_paths) - ind_paths.count(0)
+    ind_paths = [l for l in range(1, len(pairs)) if pairs.count(l) > 0]
+    ion_paths = len(ind_paths)# - ind_paths.count(0) (they are not already.)
 
     variables_lines = {'line_{:02d}'.format(x):{} for x in range(ion_paths)}
     line = 0
     for elem in ind_paths:
-        if elem != 0:
+        if elem != 0: # It should never be == 0 after the condition added in ind_paths
             variables_lines['line_{:02d}'.format(line)]={l: [x for i,x in enumerate(variables[l]) if pairs[i] == elem] for l in ['x', 'y', 'z']}
             line += 1
 
@@ -262,10 +262,10 @@ def iontracer_writecfg(dict_input, points):
 
     cfg += "HCF {file} {mass:.0f} {charge:.0f}\n".format(file = dict_input['filename'].replace('\\',''),
                                                          mass = mass, 
-                                                         charge = charge)
+                                                         charge = charge)  #FIXME!!!! it writes 0 and 0!!! for mass and charge
 
     cfg += 'FORMATS matlab\n' # This is a ASCII format which we know how to read...
-    cfg += 'OUT_DIR ./\n'     # This should create the file where the config file resides
+    cfg += 'OUT_DIR /\n'     # This should create the file where the config file resides
 
     cfg += 'TRACEVARS parID\n'  # So we can tied each input point with it's number
     # Notice the pairs are numbered as: Odd for forward, Even for backwards, so if asks for just forward, then you would get for starting point A, B, C => 1, 3, 5 as IDs.
@@ -282,6 +282,8 @@ def iontracer_writecfg(dict_input, points):
         cfg += 'STEPSIZE {stepsize:.3f}\n'.format(stepsize = dict_input['stepsize'])
 
     order = {'nearestgridpoint': 0, 'linear': 1}
+    if dict_input['order'] != 'nearestgridpoint':
+        dict_input['order'] = 'linear'
     cfg += 'INTPOLORDER {order:.0f}\n'.format(order = order[dict_input['order']])
 
     cfg += 'VERBOSE 0\n'
@@ -295,7 +297,7 @@ def iontracer_writecfg(dict_input, points):
     box_limits = [['XMIN', 0], ['YMIN', 2], ['ZMIN', 4], 
                   ['XMAX', 1], ['YMAX', 3], ['ZMAX', 5]]
     for elem in box_limits:
-        cfg += '{label} {value:e}\n'.format(elem[0], dict_input['stop_box'][elem[1]]) 
+        cfg += '{label} {value:e}\n'.format(label = elem[0], value = float(dict_input['stop_box'][elem[1]])) 
 
     cfg += 'EOC\n'
 
@@ -305,7 +307,7 @@ def iontracer_writecfg(dict_input, points):
         # TODO! initial v, mass and charge needs to be input
     
     # Create tempfile to write the configuration
-    cfgfile = tempfile.NamedTemporaryFile(mode = '',prefix = 'hwa_ion_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
+    cfgfile = tempfile.NamedTemporaryFile(prefix = 'hwa_ion_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
     cfgfile.write(cfg)
     cfgfile.close() # it does not delete the file because delete = False
 
@@ -541,9 +543,11 @@ def getParticleTrajectory(dict_input):
     # What are the execution/error messages to check here?
     if (ion_error != ''):
         dict_input['ion_warnings'] = ion_error
-
+    #FIXME!! Check whether the file was craeted and if it works;
+    #FIXME!! iontracer does not return anything if points out of boundaries
+    # "'Error: Some points go outside of the simulation box.\nCheck points in the point data or config file\n'"
     # Convert the output file to the required format
-    outname = _writeout_ion(dict_input, cfgfilename+'_trace_0.m')
+    outname = _writeout_ion(dict_input, cfgfilename + '_trace_0.m')
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
     return outjson
 
