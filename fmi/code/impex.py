@@ -256,9 +256,9 @@ def iontracer_writecfg(dict_input, points):
     # check whether the mass and charge exists
     mass, charge = 1, 1
     if dict_input['properties'].has_key('mass'):
-        mass = np.round(dict_input['properties']['mass'])
+        mass = np.round(dict_input['properties'][0]['mass'])
     if dict_input['properties'].has_key('charge'):
-        charge = np.round(dict_input['properties']['charge'])
+        charge = np.round(dict_input['properties'][0]['charge'])
 
     cfg += "HCF {file} {mass:.0f} {charge:.0f}\n".format(file = dict_input['filename'].replace('\\',''),
                                                          mass = mass, 

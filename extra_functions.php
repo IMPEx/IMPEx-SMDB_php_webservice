@@ -156,14 +156,17 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 	  try {
 	    $productkey = (string)$entry->AccessInformation->AccessURL->ProductKey; // used as filename in FMI -TODO: same for the rest?
 	  } catch (Exception $e) {
-	    $productkey = '';
+	    $productkey = ''; // TODO: throw it if filename needed?
 	  }
 	  $parameters = array();
 	  foreach ($entry->Parameter as $param)
 	    {
-	      array_push($parameters, $param->ParameterKey); // TODO: FixMe, some values are like: vx,vy,vz
-	      $mass = (float)$param->Particle->PopulationMassNumber;
-	      $charge = (float)$param->Particle->PopulationCharegeState;
+	      $prop = array(
+			    'key' => $param->ParameterKey,
+			    'mass' => (float)$param->Particle->PopulationMassNumber,
+			    'charge' => (float)$param->Particle->PopulationChargeState
+			    );
+	      array_push($parameters, $prop); // TODO: FixMe, some values are like: vx,vy,vz
 	    }
 	  $resourceIDSimulation = (string)$entry->InputResourceID;
 	  foreach ($model->SimulationRun as $simulation)
@@ -205,21 +208,29 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 /**
  * check_input_Variable identifies whether the variables asked exist
  * @param string $Variable which default is NULL
- * @param array $parameters is the list of possible values to extract
+ * @param array $parameters is the list of possible values to extract (with their mass and charge)
  * @return array with the valid list of parameters 
  * @throws SoapFault for (1) a wrong variable
  */
 function check_input_Variable($Variable, array $parameters){
+  $possible_par = array();
+  foreach ($parameters as $elem)
+    {
+      foreach (preg_split("/[\s(,|;)]+/", $elem["key"]) as $key)
+	{
+	  array_push($possible_par, $key);
+	}
+    }
   if (is_null($Variable) or $Variable == '')
     {
-      return $parameters;
+      return $possible_par;
     }
   else
     {
       $outVariable = array();
       foreach (preg_split("/[\s(,|;)]+/", $Variable) as $var_requested)
 	{
-	  if (in_array($var_requested, $parameters))
+	  if (in_array($var_requested, $possible_par))
 	    {
 	      array_push($outVariable, $var_requested);
 	    }
