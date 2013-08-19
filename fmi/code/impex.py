@@ -382,7 +382,7 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
         cmd += ' -ss {:f} '.format(step_size)
 
     axis = ['x', 'y', 'z']
-    if (variables in [variables[0] + x for x in axis]):
+    if (variables in [variables[0] + ax for ax in axis]):
         cmd += variables[0]
     else:
         cmd += variables # FixMe! This assumes a single variable!
