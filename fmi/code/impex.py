@@ -215,7 +215,7 @@ def _table2dict(table):
             variables_out = {var: [] for var in variables_list}
         else:  
             values = line.split()
-            for i, var in enumerate(variables_list):
+            for i, var in enumerate(variables_list):   # If 1st line is not # or % with variables, then this fails!
                 variables_out[var].append(float(values[i]))
     return variables_out
 
@@ -256,9 +256,9 @@ def iontracer_writecfg(dict_input, points):
     # check whether the mass and charge exists
     mass, charge = 1, 1
     if dict_input['properties'].has_key('mass'):
-        mass = np.round(dict_input['properties'][0]['mass'])
+        mass = np.round(dict_input['properties']['mass'])
     if dict_input['properties'].has_key('charge'):
-        charge = np.round(dict_input['properties'][0]['charge'])
+        charge = np.round(dict_input['properties']['charge'])
 
     cfg += "HCF {file} {mass:.0f} {charge:.0f}\n".format(file = dict_input['filename'].replace('\\',''),
                                                          mass = mass, 
@@ -381,7 +381,11 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
     if (step_size != 1):
         cmd += ' -ss {:f} '.format(step_size)
 
-    cmd += variables # FixMe! This assumes a single variable!
+    axis = ['x', 'y', 'z']
+    if (variables in [variables[0] + x for x in axis]):
+        cmd += variables[0]
+    else:
+        cmd += variables # FixMe! This assumes a single variable!
     
     cmd += ' {0:f},{1:f},{2:f} '.format(x, y, z) # FixMe! This assumes a single starting point!
     
