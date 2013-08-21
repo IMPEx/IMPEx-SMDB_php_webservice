@@ -350,5 +350,30 @@ class IMPExMethods {
     // The method executed throws an error message if file/url is not created
     return $url_Param;
   }
+
+  /**
+   * getVOTableURL creates a votable from input coordinates[, velocities, mass and charge]
+   * 
+   * @param String $X list of the x coordinate values (m)
+   * @param String $Y list of the y coordinate values (m)
+   * @param String $Z list of the z coordinate values (m)
+   * @param String $Vx Optional: list of the component x of the velocity (m/s)
+   * @param String $Vy Optional: list of the component y of the velocity (m/s)
+   * @param String $Vz Optional: list of the component z of the velocity (m/s)
+   * @param String $mass Optional: list of the mass for each ion associated to the coordinates (kg)
+   * @param String $charge Optional: list of the charge for each ion associated to the coordinate (C)
+   * @return String URL_XYZ URL with a VOTable with the values input
+   */
+  public function getParticleTrajectory($X, $Y, $Z,
+					$Vx = NULL,
+					$Vy = NULL,
+					$Vz = NULL,
+					$mass = NULL, 
+					$charge = NULL){
+    $coordinates = check_coordinates_input($X, $Y, $Z, $Vx, $Vy, $Vz, $mass, $charge);
+    $url_XYZ = execute_Method(__FUNCTION__, 'FMI', $coordinates);
+    return $url_XYZ;
+  }
+
 }
 ?>

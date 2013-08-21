@@ -166,7 +166,7 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 			    'mass' => (float)$param->Particle->PopulationMassNumber,
 			    'charge' => (float)$param->Particle->PopulationChargeState
 			    );
-	      array_push($parameters, $prop); // TODO: FixMe, some values are like: vx,vy,vz
+	      array_push($parameters, $prop); 
 	    }
 	  $resourceIDSimulation = (string)$entry->InputResourceID;
 	  foreach ($model->SimulationRun as $simulation)
@@ -216,7 +216,7 @@ function check_input_Variable($Variable, array $parameters){
   $possible_par = array();
   foreach ($parameters as $elem)
     {
-      foreach (preg_split("/[\s(,|;)]+/", $elem["key"]) as $key)
+      foreach (preg_split("/[\s(,|;)]+/", $elem["key"]) as $key)// To solve that some values are like: vx,vy,vz
 	{
 	  array_push($possible_par, $key);
 	}
@@ -497,6 +497,109 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 				    $model_properties['valid_min'][2], $model_properties['valid_max'][2],);
     }
   return $StopCondition_Region;
+}
+
+/**
+ * check_input_coordinates looks up if all the parameters are properly formed
+ * @param string $x
+ * @param string $y
+ * @param string $z
+ * @param string $vx
+ * @param string $vy
+ * @param string $vz
+ * @param string $mass
+ * @param string $charge
+ * @return array $coordinates
+ * @trhows SoapFault for (1) empty compulsory param, (2) different sizes arrays
+ */
+function check_input_coordinates($x, $y, $z, 
+				 $vx = NULL, $vy = NULL, $vz = NULL,
+				 $mass = NULL, $charge = NULL){
+
+  // check x,y,z are not empty
+  if ((is_null($x) or $x == '') or (is_null($y) or $y == '') or (is_null($z) or $z == ''))
+    {
+      throw new SoapFault('1', 'X, Y and Z are compulsary parameters');
+    }
+  // check velocity components if they are not empty they are not all together
+  if (!is_null($vx) or !is_null($vy) or !is_null($vz) or $vx != '' or $vy != '' or $vz != '')
+    {
+      if (is_null($vx) or is_null($vy) or is_null($vz) or $vx == '' or $vy == '' or $vz == '')
+	{
+	  throw new SoapFault('1', 'Vx, Vy and Vz are optional, but the three of them have to be provided');
+	}
+    }
+  // check if mass and charge are not empty both of them.
+  if (!is_null($mass) or $mass != '' or !is_null($charge) or $charge != '')
+    {
+      if (is_null($mass) or $mass == '' or is_null($charge) or $charge == '')
+	{
+	  throw new SoapFault('1', 'mass and charge are optional, but they need to be defined together');
+	}
+    }
+
+  // build arrays from the comma separated strings for the coordinates; fail if they are different sizes
+  $x_array = preg_split("/[\s(,|;)]+/", $x);
+  $y_array = preg_split("/[\s(,|;)]+/", $y);
+  $z_array = preg_split("/[\s(,|;)]+/", $z);
+  if (count($x_array) !== count($y_array) or count($x_array) !== count($z_array))
+    {
+      throw new SoapFault('2', 'The number of elements in x, y and z are not the same; you need to provide them separated by "," or ";"');
+    }
+
+  // build array for velocity components, fail if they are different sizes between themselves or compared with coordinates.
+  if (!is_null($vx) or $vx != '')
+    {
+      $vx_array = preg_split("/[\s(,|;)]+/", $vx);
+      $vy_array = preg_split("/[\s(,|;)]+/", $vy);
+      $vz_array = preg_split("/[\s(,|;)]+/", $vz);
+      if (count($vx_array) !== count($vy_array) or count($vx_array) !== count($vz_array))
+	{
+	  throw new SoapFault('2', 'The number of elements in vx, vy and vz are not the same; you need to provide them separated by "," or ";"');
+	}
+      elseif (count($vx_array) !== count($x_array))
+	{
+	  throw new SoapFault('2', 'The number of elements in velocity needs to be the same ammount than in coordinates');
+	}
+    }
+  else
+    {
+      $vx_array = NULL;
+      $vy_array = NULL;
+      $vz_array = NULL;
+    }
+
+  // build array for charge and mass, fail if they are different sizes between themselves or compared with coordinates.
+  if (!is_null($mass) or $mass != '')
+    {
+      $mass_array = preg_split("/[\s(,|;)]+/", $mass);
+      $charge_array = preg_split("/[\s(,|;)]+/", $charge);
+      if (count($mass_array) !== count($charge_array))
+	{
+	 throw new SoapFault('2', 'The number of elements in mass and charge are not the same; you need to provide them separated by "," or ";"'); 
+	}
+      elseif (count($mass_array) !== count($x_array))
+	{
+	  throw new SoapFault('2', 'The number of elements in mass and charge needs to be the same ammount than in coordinates');
+	}
+    }
+  else
+    {
+      $mass_array = NULL;
+      $charge_array = NULL;
+    }
+
+  // Here all the variables must be already checked in number of elements and properties.
+  $coordinates = array('x' => $x_array,
+		       'y' => $y_array,
+		       'z' => $z_array,
+		       'vx' => $vx_array,
+		       'vy' => $vy_array,
+		       'vz' => $vz_array,
+		       'mass' => $mass_array,
+		       'charge' => $charge_array);
+
+  return $coordinates;
 }
 
 /*

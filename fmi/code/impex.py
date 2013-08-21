@@ -47,7 +47,9 @@ fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m
                 'Ey' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
                 'Ez' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
                 'E'  :   {'name': 'E','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'}, 
-                'Time':  {'name': 'Date', 'ucd': 'TIME', 'unit': 'iso-8601', 'type': 'char', 'size': '*'}
+                'Time':  {'name': 'Date', 'ucd': 'TIME', 'unit': 'iso-8601', 'type': 'char', 'size': '*'},
+                'mass':  {'name': 'Mass', 'ucd': 'phys.mass', 'units': u.kilogram, 'type':'double', 'size': '1'},
+                'charge':{'name': 'Charge', 'ucd': 'phys.atmol.charge', 'units': u.coulomb, 'type':'double', 'size': '1'}
 }                            
 
 def query2string(query):
@@ -555,6 +557,19 @@ def getParticleTrajectory(dict_input):
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
     return outjson
 
+def getVOTableURL(dict_input):
+    '''
+    Builds a VOTable and return the URL so it can be used as a remote storage.
+    '''
+    outjson = {'out_url':'', 'error':''}
+    filename = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.votable', delete = False)
+    filename.close()
+    query = 'VOTable created with the getVOTableURL service provided by FMI \n' +\
+            '== Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
+    points2vot(filename.name, dict_input['coordinates'], query)
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(filename.name)
+    return outjson
+
 if __name__ == '__main__':# Load the data that PHP sent us
 
     try:
@@ -571,7 +586,8 @@ if __name__ == '__main__':# Load the data that PHP sent us
                  'getSurface': getSurface,
                  'getFileURL': getFileURL,
                  'getDataPointSpectra_spacecraft': getDataPointSpectra_spacecraft,
-                 'getParticleTrajectory': getParticleTrajectory}
+                 'getParticleTrajectory': getParticleTrajectory,
+                 'getVOTableURL': getVOTableURL}
 
     # parse the data object to the right function
     try:

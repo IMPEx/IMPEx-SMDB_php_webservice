@@ -8,7 +8,8 @@ $dict_functions = array('getDataPointValue' => 'run_getDataPointValue',
 			'getSurface' => 'run_getSurface',
 			'getFileURL' => 'run_getFileURL',
 			'getDataPointSpectra_spacecraft' => 'run_getDataPointSpectra_spacecraft',
-			'getParticleTrajectory' => 'run_getParticleTrajectory');
+			'getParticleTrajectory' => 'run_getParticleTrajectory',
+			'getVOTableURL' => 'run_getVOTableURL');
 
 
 /**
@@ -118,6 +119,12 @@ function run_getParticleTrajectory($ResourceID,
 		      'OutputFiletype' => $OutputFileType,
 		      'url_XYZ' => $url_XYZ);
 
+  return run_fmi_any($data2funct);
+}
+
+function run_getVOTableURL($coordinates){
+  $data2funct = array('function' => 'getVOTableURL',
+		      'coordinates' => $coordinates);
   return run_fmi_any($data2funct);
 }
 
