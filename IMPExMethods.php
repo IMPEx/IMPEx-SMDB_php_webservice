@@ -370,7 +370,7 @@ class IMPExMethods {
 					$Vz = NULL,
 					$mass = NULL, 
 					$charge = NULL){
-    $coordinates = check_coordinates_input($X, $Y, $Z, $Vx, $Vy, $Vz, $mass, $charge);
+    $coordinates = check_input_coordinates($X, $Y, $Z, $Vx, $Vy, $Vz, $mass, $charge);
     $url_XYZ = execute_Method(__FUNCTION__, 'FMI', $coordinates);
     return $url_XYZ;
   }
