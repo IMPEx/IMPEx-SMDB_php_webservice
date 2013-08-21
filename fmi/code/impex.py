@@ -564,8 +564,9 @@ def getVOTableURL(dict_input):
     outjson = {'out_url':'', 'error':''}
     filename = tempfile.NamedTemporaryFile(prefix = 'hwa_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.votable', delete = False)
     filename.close()
-    query = 'VOTable created with the getVOTableURL service provided by FMI \n' +\
-            '== Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
+    query = {'function': 'getVOTableURL'}
+    #query = 'VOTable created with the getVOTableURL service provided by FMI \n' +\
+    #        '== Query executed on: ' + datetime.datetime.now().isoformat() + '==\n'
     points2vot(filename.name, dict_input['coordinates'], query)
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(filename.name)
     return outjson
