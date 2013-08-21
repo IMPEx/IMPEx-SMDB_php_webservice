@@ -115,11 +115,11 @@ def points2vot(filename, points_d, query, time = None):
 
             fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
                                          arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
-                                         ucd=fields_props[v]['ucd']) for v in var]
+                                         ucd=fields_props[v]['ucd']) for v in var if line[v] is not None]
             table.fields.extend(fields)
 
             # points_d dict to array
-            points_array = np.array([line[x] for x in var]).transpose()
+            points_array = np.array([map(float, line[x]) for x in var if line[x] is not None]).transpose() #NOTE: this assumes we are just passing numbers!
             table.create_arrays(points_array.shape[0])
     
             if time is None:
@@ -142,11 +142,11 @@ def points2vot(filename, points_d, query, time = None):
 
         fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
                                      arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
-                                     ucd=fields_props[v]['ucd']) for v in var]
+                                     ucd=fields_props[v]['ucd']) for v in var if points_d[v] is not None]
         table.fields.extend(fields)
 
         # points_d dict to array
-        points_array = np.array([points_d[x] for x in var]).transpose()
+        points_array = np.array([map(float, points_d[x]) for x in var if points_d[x] is not None]).transpose() #NOTE: this assumes we are just passing numbers!
         table.create_arrays(points_array.shape[0])
         
         if time is None:

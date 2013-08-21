@@ -122,9 +122,11 @@ function run_getParticleTrajectory($ResourceID,
   return run_fmi_any($data2funct);
 }
 
-function run_getVOTableURL($coordinates){
+function run_getVOTableURL($x, $y, $z, $vx = NULL, $vy = NULL, $vz = NULL, $mass = NULL, $charge = NULL){
   $data2funct = array('function' => 'getVOTableURL',
-		      'coordinates' => $coordinates);
+		      'coordinates' => array('x' => $x, 'y' => $y, 'z' => $z,
+					     'vx' => $vx, 'vy' => $vy, 'vz' => $vz,
+					     'mass' => $mass, 'charge' => $charge));
   return run_fmi_any($data2funct);
 }
 

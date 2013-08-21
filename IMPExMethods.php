@@ -365,11 +365,11 @@ class IMPExMethods {
    * @return String URL_XYZ URL with a VOTable with the values input
    */
   public function getVOTableURL($X, $Y, $Z,
-					$Vx = NULL,
-					$Vy = NULL,
-					$Vz = NULL,
-					$mass = NULL, 
-					$charge = NULL){
+				$Vx = NULL,
+				$Vy = NULL,
+				$Vz = NULL,
+				$mass = NULL, 
+				$charge = NULL){
     $coordinates = check_input_coordinates($X, $Y, $Z, $Vx, $Vy, $Vz, $mass, $charge);
     $url_XYZ = execute_Method(__FUNCTION__, 'fmi', $coordinates);
     return $url_XYZ;
