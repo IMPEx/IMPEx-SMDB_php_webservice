@@ -364,7 +364,7 @@ class IMPExMethods {
    * @param String $charge Optional: list of the charge for each ion associated to the coordinate (C)
    * @return String URL_XYZ URL with a VOTable with the values input
    */
-  public function getParticleTrajectory($X, $Y, $Z,
+  public function getVOTableURL($X, $Y, $Z,
 					$Vx = NULL,
 					$Vy = NULL,
 					$Vz = NULL,
