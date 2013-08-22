@@ -65,16 +65,29 @@ def query2string(query):
     return finalstring
 
 def vot2points(filename):
+    '''
+    It produces a dictionary with the arrays for each of the fields we use in the other functions
+    '''
     vot = votable.parse_single_table(filename, pedantic = False)
-    types = ['x', 'y', 'z']
-    points = np.empty((vot.nrows, 3))
+    axis = ['x', 'y', 'z']
+    types = ['pos.cartesian.'+l for l in axis] + ['phys.veloc', 'phys.mass', 'phys.atmol.charge']
+    points = {}
     for column in vot.iter_fields_and_params():
-        if column.name.lower() in types:
-            ucd_name = 'pos.cartesian.' + column.name.lower()
-            idx = types.index(column.name.lower())
-            if (column.ucd == ucd_name) or (column.ucd == ucd_name.upper()):
-                point_column = vot.array[column.ID].data * column.unit
-                points[:, idx] = point_column.si.value
+        if column.ucd.lower() in types:
+            if column.ucd.lower() == types[3]:
+                findaxis = lambda x: x in column.name.lower()
+                mask = map(findaxis, axis)
+                if True in mask:
+                    column_name = 'v'+axis[mask.index(True)]
+                    column_unit = column.unit if column.unit is not None else fields_props[column_name]['units']
+                    column_values = vot.array[column.ID].data * column_unit
+                    points[column_name] = column_values.si.value
+            else:
+                for key in fields_props.keys():
+                    if column.ucd.lower() == fields_props[key]['ucd']:
+                        column_unit = column.unit if column.unit is not None else fields_props[key]['units']
+                        column_values = vot.array[column.ID].data * column_unit
+                        points[key] = column_values.si.value
     return points
 
 def points2vot(filename, points_d, query, time = None):
@@ -249,7 +262,7 @@ def iontracer_writecfg(dict_input, points):
     '''
     it writes the config file needed to run the iontracer routine with the 
     parameters set in the method. 
-    points need to be a list of 3D points.
+    points are a dictionary with 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mass', 'charge'.
     NOTE: Defaults options are hardcoded, by now (though it should be easy to input)
     '''
     cfg = ''
@@ -265,6 +278,7 @@ def iontracer_writecfg(dict_input, points):
     cfg += "HCF {file} {mass:.0f} {charge:.0f}\n".format(file = dict_input['filename'].replace('\\',''),
                                                          mass = mass, 
                                                          charge = charge)  #FIXME!!!! it writes 0 and 0!!! for mass and charge
+    # That problem is due to the fact that some simulations don't have the info needed.
 
     cfg += 'FORMATS matlab\n' # This is a ASCII format which we know how to read...
     cfg += 'OUT_DIR /\n'     # This should create the file where the config file resides
@@ -304,9 +318,16 @@ def iontracer_writecfg(dict_input, points):
     cfg += 'EOC\n'
 
     cfg += '########### INITIAL POINTS SECTION ###########\n'
-    for stpoint in points:
-        cfg += '{0[0]:e} {0[1]:e} {0[2]:e}\n'.format(stpoint)
-        # TODO! initial v, mass and charge needs to be input
+    for idx in range(len(points['x'])):
+        cfg += '{x:e} {y:e} {z:e} {vx:e} {vy:e} {vz:e} {relmass:d} {relcharge:d}\n'.format(x = points['x'][idx],
+                                                                                           y = points['y'][idx],
+                                                                                           z = points['z'][idx],
+                                                                                           vx = points['vx'][idx],
+                                                                                           vy = points['vy'][idx],
+                                                                                           vz = points['vz'][idx],
+                                                                                           relmass = round(points['mass'][idx] / const.m_p.value),
+                                                                                           relcharge = round(points['charge'][idx] / const.e.value))
+
     
     # Create tempfile to write the configuration
     cfgfile = tempfile.NamedTemporaryFile(prefix = 'hwa_ion_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
@@ -428,7 +449,7 @@ def getDataPointValue(dict_input):
     
     # url_XYZ - Get the votable file, download it; process it to [x],[y],[z] ; TODO: Check whther it does not fail
     points = _url2points(dict_input['url_XYZ'])
-    x, y, z = points[:,0], points[:,1], points[:, 2]
+    x, y, z = points['x'], points['y'], points['z']
 
     # Run hcintpol with the the file, coordinates, var and intpol method
     filename = str(dict_input['filename'])
@@ -476,7 +497,7 @@ def getFieldLine(dict_input):
 
     points = _url2points(dict_input['url_XYZ'])
     # Read starting point(s) #TODO: What happens when we get multiple starting points?
-    x, y, z = points[:,0], points[:,1], points[:, 2]
+    x, y, z = points['x'], points['y'], points['z']
 
     if (len(x) > 1):
         x, y, z = x[0], y[0], z[0] # fixme: we should be able to run multiple initial cond.
