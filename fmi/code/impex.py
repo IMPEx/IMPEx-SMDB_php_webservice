@@ -9,6 +9,7 @@ import numpy as np
 import json
 import astropy.io.votable as votable
 import astropy.units as u
+import astropy.constants as const
 from  scipy.io import netcdf
 from itertools import izip
 import urllib2
@@ -127,7 +128,7 @@ def points2vot(filename, points_d, query, time = None):
                 var = ['Time'] + var[-3:] + var[:-3]
 
             fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
-                                         arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
+                                         arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string('cds'), 
                                          ucd=fields_props[v]['ucd']) for v in var if line[v] is not None]
             table.fields.extend(fields)
 
@@ -154,7 +155,7 @@ def points2vot(filename, points_d, query, time = None):
             var = ['Time'] + var[-3:] + var[:-3]
 
         fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
-                                     arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string(), 
+                                     arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string('cds'), 
                                      ucd=fields_props[v]['ucd']) for v in var if points_d[v] is not None]
         table.fields.extend(fields)
 
@@ -192,14 +193,14 @@ def points2netcdf(filename, points_d, query, time = None):
             line = points_d[key]
             for coord in line.keys():  # x, y, z, ...
                 key_n = f.createVariable(fields_props[coord]['name']+'_'+key, fields_props[coord]['type'],(dim,))
-                key_n.units = fields_props[coord]['units'].to_string()
+                key_n.units = fields_props[coord]['units'].to_string('cds')
                 key_n[:] = line[coord]
     else:
         dim = 'dim'
         f.createDimension(dim, len(points_d[points_d.keys()[0]]))
         for key in points_d.keys():
             key_n = f.createVariable(fields_props[key]['name'], fields_props[key]['type'],(dim,))
-            key_n.units = fields_props[key]['units'].to_string()
+            key_n.units = fields_props[key]['units'].to_string('cds')
             key_n[:] = points_d[key]
     f.close()
 
@@ -319,14 +320,14 @@ def iontracer_writecfg(dict_input, points):
 
     cfg += '########### INITIAL POINTS SECTION ###########\n'
     for idx in range(len(points['x'])):
-        cfg += '{x:e} {y:e} {z:e} {vx:e} {vy:e} {vz:e} {relmass:d} {relcharge:d}\n'.format(x = points['x'][idx],
-                                                                                           y = points['y'][idx],
-                                                                                           z = points['z'][idx],
-                                                                                           vx = points['vx'][idx],
-                                                                                           vy = points['vy'][idx],
-                                                                                           vz = points['vz'][idx],
-                                                                                           relmass = round(points['mass'][idx] / const.m_p.value),
-                                                                                           relcharge = round(points['charge'][idx] / const.e.value))
+        cfg += '{x:e} {y:e} {z:e} {vx:e} {vy:e} {vz:e} {relmass:d} {relcharge:d}\n'.format(x = float(points['x'][idx]),
+                                                                                           y = float(points['y'][idx]),
+                                                                                           z = float(points['z'][idx]),
+                                                                                           vx = float(points['vx'][idx]),
+                                                                                           vy = float(points['vy'][idx]),
+                                                                                           vz = float(points['vz'][idx]),
+                                                                                           relmass = int(round(points['mass'][idx] / const.m_p.value)),
+                                                                                           relcharge = int(round(points['charge'][idx] / const.e.value)))
 
     
     # Create tempfile to write the configuration
