@@ -74,8 +74,9 @@ def vot2points(filename):
     types = ['pos.cartesian.'+l for l in axis] + ['phys.veloc', 'phys.mass', 'phys.atmol.charge']
     points = {}
     for column in vot.iter_fields_and_params():
-        if column.ucd.lower() in types:
-            if column.ucd.lower() == types[3]:
+        ucd = str(column.ucd)
+        if ucd.lower() in types:
+            if ucd.lower() == types[3]:
                 findaxis = lambda x: x in column.name.lower()
                 mask = map(findaxis, axis)
                 if True in mask:
@@ -85,7 +86,7 @@ def vot2points(filename):
                     points[column_name] = column_values.si.value
             else:
                 for key in fields_props.keys():
-                    if column.ucd.lower() == fields_props[key]['ucd']:
+                    if ucd.lower() == fields_props[key]['ucd']:
                         column_unit = column.unit if column.unit is not None else fields_props[key]['units']
                         column_values = vot.array[column.ID].data * column_unit
                         points[key] = column_values.si.value
