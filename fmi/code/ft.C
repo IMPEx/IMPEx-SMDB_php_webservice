@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
   struct Xcoord field;
   struct Xcoord mp;
 
-  printf("# pair_id    x     y     z      %s     %s     %s\n",varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
+  printf("# parID    x     y     z      %s     %s     %s\n",varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
   
   // read the file data as starting points.
   char line[1026];

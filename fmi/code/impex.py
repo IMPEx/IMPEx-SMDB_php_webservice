@@ -254,7 +254,7 @@ def _writeout_ion(dict_input, values):
     line = 0
     for elem in ind_paths:
         if elem != 0: # It should never be == 0 after the condition added in ind_paths
-            variables_lines['line_{:02d}'.format(line)]={l: [x for i,x in enumerate(variables[l]) if pairs[i] == elem] for l in ['x', 'y', 'z']}
+            variables_lines['line_{:02d}'.format(line)]={l: [x for i,x in enumerate(variables[l]) if pairs[i] == elem] for l in fields_props.keys() if l in variables.keys()}
             line += 1
 
     return _writeout(dict_input, variables_lines)
@@ -422,8 +422,8 @@ def hcfieldline(filename, file_start, variables = None, radius = 0,
     fieldline, error = ft_in.communicate() 
              
     # Extract the 6 columns (coordinates and fields - x,y,z) into a dict
-    variables_out = _table2dict(fieldline.splitlines())
-    return variables_out, error
+    #variables_out = _table2dict(fieldline.splitlines())
+    return fieldline, error
 
 
 def getDataPointValue(dict_input):
@@ -503,7 +503,7 @@ def getFieldLine(dict_input):
     startfile = tempfile.NamedTemporaryFile(prefix = 'hwa_ft_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
     startfile_str = ''
     for index, elem in enumerate(points['x']):
-        startfile_str += '{0:%f} {1:%f} {2:%f}'.format(points['x'][index], points['y'][index], points['z'][index])
+        startfile_str += '{0:f} {1:f} {2:f}\n'.format(points['x'][index], points['y'][index], points['z'][index])
     startfile.write(startfile_str)
     startfile.close()
 
