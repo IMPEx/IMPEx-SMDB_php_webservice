@@ -236,12 +236,12 @@ def _table2dict(table):
                 variables_out[var].append(float(values[i]))
     return variables_out
 
-def _writeout_ion(dict_input, resultfile):
+def _writeout_ion(dict_input, values):
     #read result file
-    results = open(resultfile, 'r')     # TODO: If to do in a general way this should either get a stdout (eg., fieldline tracer)
+    #results = open(resultfile, 'r')     # TODO: If to do in a general way this should either get a stdout (eg., fieldline tracer)
     # Extracts {x:[...], y:[...], z:[...], pairID:[...]}
-    variables = _table2dict(results.readlines())
-    results.close()
+    variables = _table2dict(values)
+    #results.close()
 
     # number of ion paths
     # Each path has a number > 0.  So, we count these pairs > 0
@@ -374,7 +374,7 @@ def hcintpol(filename, x, y, z, variables=None, linear=True):
     variables_out = _table2dict(interpolatedvalues.splitlines())
     return variables_out, error
 
-def hcfieldline(filename, x, y, z, variables = None, radius = 0,
+def hcfieldline(filename, file_start, variables = None, radius = 0,
                 stop_box = None, max_step = None, step_size = 1, 
                 direction = 'Forward', linear=True):
     '''
@@ -411,11 +411,11 @@ def hcfieldline(filename, x, y, z, variables = None, radius = 0,
         cmd += variables[0]
     else:
         cmd += variables # FixMe! This assumes a single variable!
-    
-    cmd += ' {0:f},{1:f},{2:f} '.format(x, y, z) # FixMe! This assumes a single starting point!
-    
+
     cmd += ' ' + filename
 
+    cmd += ' -i ' + file_start
+    
     ft_in = subprocess.Popen(cmd, shell=True,
                              stdout=subprocess.PIPE, 
                              stderr=subprocess.PIPE)
@@ -498,16 +498,19 @@ def getFieldLine(dict_input):
     outjson = {'out_url':'', 'error':''}
 
     points = _url2points(dict_input['url_XYZ'])
-    # Read starting point(s) #TODO: What happens when we get multiple starting points?
-    x, y, z = points['x'], points['y'], points['z']
 
-    if (len(x) > 1):
-        x, y, z = x[0], y[0], z[0] # fixme: we should be able to run multiple initial cond.
+    # Starting points to file
+    startfile = tempfile.NamedTemporaryFile(prefix = 'hwa_ft_', dir = impex_cfg.get('fmi', 'diroutput'), suffix = '.cfg', delete = False)
+    startfile_str = ''
+    for index, elem in enumerate(points['x']):
+        startfile_str += '{0:%f} {1:%f} {2:%f}'.format(points['x'][index], points['y'][index], points['z'][index])
+    startfile.write(startfile_str)
+    startfile.close()
 
     # Run fieldline tracer with the the file, coordinates, var and intpol method
     filename = str(dict_input['filename'])
     result, hcerror = hcfieldline(filename.replace('\\',''),  #TODO: FIXME, check parms!
-                                  x, y, z, 
+                                  file_start = startfile.name,
                                   variables=dict_input['variables'], # fixme: what if we have mult vars?
                                   radius = dict_input['stop_radius'],
                                   stop_box = dict_input['stop_box'],
@@ -521,7 +524,7 @@ def getFieldLine(dict_input):
     if (hcerror != ''):
         dict_input['hc_warnings'] = hcerror
         
-    outname = _writeout(dict_input, result) #Fixme: if we want to provide multiple input points or variables this needs also to apply.
+    outname = _writeout_ion(dict_input, result.splitlines()) #Fixme: if we want to provide multiple input points or variables this needs also to apply.
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
 
     return outjson
@@ -576,7 +579,9 @@ def getParticleTrajectory(dict_input):
     #FIXME!! iontracer does not return anything if points out of boundaries
     # "'Error: Some points go outside of the simulation box.\nCheck points in the point data or config file\n'"
     # Convert the output file to the required format
-    outname = _writeout_ion(dict_input, cfgfilename + '_trace_0.m')
+    values = open(cfgfilename + '_trace_0.m', 'r')
+    outname = _writeout_ion(dict_input, values.readlines())
+    values.close()
     outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
     return outjson
 

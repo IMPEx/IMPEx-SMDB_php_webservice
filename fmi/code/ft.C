@@ -11,6 +11,8 @@
 #include "gridcache.H"
 #define MAX_VARS 1000
 
+FILE *input = 0;
+
 struct Xcoord
 {
   double x;
@@ -133,7 +135,7 @@ struct Xcoord normal_vector(struct Xcoord X)
   modulus = sqrt((X.x * X.x) + (X.y * X.y) + (X.z * X.z));
   //printf("Normal vector: %g, %g, %g\n",  X.x, X.y, X.z);
   if(modulus == 0) {
-    die("Null Vector");
+    throw 10; // "Null Vector"
   } else {
     X.x /= modulus;
     X.y /= modulus;
@@ -189,14 +191,14 @@ void midpoint(struct Xcoord X0, struct Box Box)
 
 void usage()
 {
-  char *usage = "usage: ft [-z] [-r r0] [-l x0,x1,y0,y1,z0,z1] [-ms max_step] [-ss step_size] [-b] var x,y,z hcfile [> output] \n";
+  char *usage = "usage: ft [-z] [-r r0] [-l x0,x1,y0,y1,z0,z1] [-ms max_step] [-ss step_size] [-b] var hcfile -i input_coordinates [> output] \n";
   die(usage);
 }
 
 int main(int argc, char *argv[])
 {
   // Read input arguments in the 
-  if(argc < 4) usage();
+  if(argc < 5) usage();
   int argv_pos = 1;
   int intpol_order = 1;  // 1 = linear, 0 = zeroth order
   double input_radius = 0;
@@ -251,20 +253,18 @@ int main(int argc, char *argv[])
   stepsize *= stepsize_direction;
 
   // read compulsary inputs
-  if(argc - argv_pos == 3) {
+  if(argc - argv_pos == 4) {
     var_input = argv[argv_pos]; //"j"; // read from argv
-    scanret = sscanf(argv[argv_pos + 1], "%f , %f , %f", &x, &y, &z);
-    if(scanret != 3) die("Not valid coordinates as starting point");
-    hcfile = argv[argv_pos+2];
+    hcfile = argv[argv_pos+1];
+    if(!strcmp(argv[argv_pos+2], "-i")) {
+      input = fopen(argv[argv_pos+3], "r");
+      if(!input) die("Input coordinates file cannot be open");
+    } else die("A valid input file with coordinates needs to be input with the -i flag");
   } else usage();
 
   // Box for limits
   struct Box boxy = { .bmin = xmin, .bmax = xmax, .radius = 1};
   
-  // set input starting point  // read from argv
-  struct Xcoord p0 = {.x = x, .y = y, .z = z};
-
-
   // set input variable; from B to Bx, By, Bz
  
   char *varlist = 0;
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 
   if(info) {
     printf("# The variables computed are: %s, %s, %s\n", varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
-    printf("# The input variables are: %g, %g, %g\n", x, y, z);
+    //printf("# The input variables are: %g, %g, %g\n", x, y, z);
     printf("# The hcfile is %s\n", hcfile);
     printf("# The cube limits are:\t #x \t y \t z \n# \t\t min: \t %g \t %g \t %g \n# \t\t max: \t %g \t %g \t %g \n", boxy.bmin.x, boxy.bmin.y, boxy.bmin.z, boxy.bmax.x, boxy.bmax.y, boxy.bmax.z);
     printf("# The min radius used: %f \n", input_radius);
@@ -322,52 +322,95 @@ int main(int argc, char *argv[])
   struct Xcoord field;
   struct Xcoord mp;
 
-  printf("# x     y     z      %s     %s     %s\n",varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
-  // start point 0; 
-  // inside box?
-  if(!withinbox(p0, boxy)) die("Points outside boundaries");
-  //printf("%g %g %g",p0.x, p0.y, p0.z);
+  printf("# pair_id    x     y     z      %s     %s     %s\n",varnames[varpos[1]], varnames[varpos[2]], varnames[varpos[3]]);
   
-  for(i = 0; i <= max_steps; i++) {
-    //printf("It seems working so far\n");
-    // get field value
-    Tdimvec X(p0.x, p0.y, p0.z);
-    if(!g.intpol(X,intpol_order, true)) {
-      die("the point is wrong");
-    } else {
-      for(j = 1; j <= varpos[0]; j++){  
-	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
-	field_a[j-1] = var.get(g, X);
-      }
-    }
-    field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
-    printf("%g %g %g %g %g %g\n",p0.x, p0.y, p0.z , field.x, field.y, field.z);
-    // get mp and 
-    mp = follow_point(p0, field, stepsize/2);
-    //printf(" mid_point = %g, %g, %g\n", mp.x, mp.y, mp.z);
-    // inside box?
-    if(!withinbox(p0, boxy)) die("Points outside boundaries");
-    // get field value for mp
-    Tdimvec Y(mp.x, mp.y, mp.z);
-    if(!g.intpol(Y, intpol_order, true)) {
-      die("the point is wrong");
-    } else {
-      for(j = 1; j <= varpos[0]; j++){
-	var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
-	field_a[j-1] = var.get(g, Y);
-      }
-    }
-    field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
+  // read the file data as starting points.
+  char line[1026];
+  int pair_id = 1;
+  int warn_pointoutsidebound = 0;
+  int warn_pointwrong = 0;
+  int warn_point_nullvector = 0;
+  while(!feof(input)) {
+    fgets(line, 1025, input);
+    if (feof(input)) break;
+    const int Len_line = strlen(line);
+    if(line[Len_line - 1] != '\n') die("Too long input line (>1024)");
+    line[Len_line] = '\0';
+    const int scanret = sscanf(line, "%f%f%f", &x, &y, &z);
+    if(scanret < 1) die("Sintax error in input file. It should contain 3 columns space separated");
+    // set input starting point for line n
+    struct Xcoord p0 = {.x = x, .y = y, .z = z};
 
-    // get final point
-    p0 = follow_point(p0, field, stepsize);
-
+    // start point 0; 
     // inside box?
-    if(!withinbox(p0, boxy)) die("Points outside boundaries");
-    // print value
+    if(!withinbox(p0, boxy)) warn_pointoutsidebound++;
     //printf("%g %g %g",p0.x, p0.y, p0.z);
-  }
+  
+    for(i = 0; i <= max_steps; i++) {
+      //printf("It seems working so far\n");
+      // get field value
+      Tdimvec X(p0.x, p0.y, p0.z);
+      if(!g.intpol(X,intpol_order, true)) {
+	warn_pointwrong++; 
+	break;
+      } else {
+	for(j = 1; j <= varpos[0]; j++){  
+	  var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
+	  field_a[j-1] = var.get(g, X);
+	}
+      }
+      field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
+      printf("%i %g %g %g %g %g %g\n", pair_id, p0.x, p0.y, p0.z , field.x, field.y, field.z);
+      // get mp and 
+      try
+	{
+	  mp = follow_point(p0, field, stepsize/2);
+	}
+      catch (int e)
+	{
+	  warn_point_nullvector++;
+	  break;
+	}
+      //printf(" mid_point = %g, %g, %g\n", mp.x, mp.y, mp.z);
+      // inside box?
+      if(!withinbox(p0, boxy)) { 
+	warn_pointoutsidebound++;
+	break;
+      }
+      // get field value for mp
+      Tdimvec Y(mp.x, mp.y, mp.z);
+      if(!g.intpol(Y, intpol_order, true)) {
+	warn_pointwrong++;
+	break;
+      } else {
+	for(j = 1; j <= varpos[0]; j++){
+	  var.select(varnames[varpos[j]], Gamma, Invmu0, Mass);
+	  field_a[j-1] = var.get(g, Y);
+	}
+      }
+      field = {.x = field_a[0], .y = field_a[1], .z = field_a[2]};
 
+      // get final point
+      try
+	{
+	  p0 = follow_point(p0, field, stepsize);
+	}
+      catch (int e)
+	{
+	  warn_point_nullvector++;
+	  break;
+	}
+      // inside box?
+      if(!withinbox(p0, boxy)) {
+	warn_pointoutsidebound++;
+	break;
+      }
+      // print value
+      //printf("%g %g %g",p0.x, p0.y, p0.z);
+    }
+    pair_id++;
+  }
+  fprintf(stderr, "%i points traced, from these: \n\t %i Points out of boundaries\n\t %i Points wrong\n\t %i Points with Null vector\n", pair_id-1, warn_pointoutsidebound, warn_pointoutsidebound, warn_point_nullvector);
   return 0;
 
 
