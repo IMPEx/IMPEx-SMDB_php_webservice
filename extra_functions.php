@@ -404,7 +404,7 @@ function check_input_StepSize($StepSize, array $model_properties){
  */
 // TODO: this function and above should be the same
 function check_input_StepSize_ion($StepSize, array $model_properties){
-  if ($StepSize <= 0)
+  if (!is_null($StepSize) and $StepSize <= 0)
     {
       throw new SoapFault('1', 'The StepSize needs to be greater than 0');
     }
