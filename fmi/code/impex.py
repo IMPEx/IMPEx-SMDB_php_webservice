@@ -561,6 +561,18 @@ def getParticleTrajectory(dict_input):
 
     # Get the points from votable
     points = _url2points(dict_input['url_XYZ'])
+    
+    # Check all masses and charges in points are equal
+    if (len(points['mass']) != (points['mass']).count(points['mass'][0])) or (len(points['charge']) != (points['charge']).count(points['charge'][0])):
+        outjson['error'] = 'All masses and charges need to be the same'
+        return outjson
+
+    # check stepsize if not input
+    
+    dict_input['suggested_stepsize'] = float((dict_input['properties']['simul_timestep']).replace('PT','').replace('S','')) * \
+                                       (points['mass'][0] / const.m_p.value) * (const.e.value / points['charge'][0])
+    if dict_input['stepsize'] is None:
+        dict_input['stepsize'] = dict_input['suggested_stepsize']
 
     # Write config file in a tmp file
     ## Define the outdir 

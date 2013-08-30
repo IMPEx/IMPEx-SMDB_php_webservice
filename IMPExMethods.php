@@ -313,7 +313,7 @@ class IMPExMethods {
     $Direction = check_input_Direction($Direction);
 
     /* Stepsize */
-    $StepSize = check_input_StepSize($StepSize, $model_properties);
+    $StepSize = check_input_StepSize_ion($StepSize, $model_properties);
 
     /* MaxSteps */
     $MaxSteps = check_input_MaxSteps($MaxSteps);

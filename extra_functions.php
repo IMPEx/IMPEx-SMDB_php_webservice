@@ -182,6 +182,7 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 					  (string)$simulation->SimulationDomain->ValidMin);
 		  $valid_max = preg_split("/[\s,]+/",
 					  (string)$simulation->SimulationDomain->ValidMax);
+		  $simul_timestep = (string)$simulation->SimulationTime->TimeStep;
 		}
 	    }
 	    
@@ -354,7 +355,7 @@ function check_input_Direction($Direction){
  * @throw SoapFault if (1) StepSize is not greater than 0, (2) keys are not present in the model_properties
  */
 function check_input_StepSize($StepSize, array $model_properties){
-  if (is_null($StepSize))
+  if (is_null($StepSize)) // TODO: This and 
     {
       if (array_key_exists('gridStructure', $model_properties) AND 
 	  array_key_exists('gridSize', $model_properties))
@@ -395,6 +396,19 @@ function check_input_StepSize($StepSize, array $model_properties){
     {
       return $StepSize;
     }
+}
+
+/**
+ * check_input_stepsize_ion is a spetial case of above
+ *
+ */
+// TODO: this function and above should be the same
+function check_input_StepSize_ion($StepSize, array $model_properties){
+  if ($StepSize <= 0)
+    {
+      throw new SoapFault('1', 'The StepSize needs to be greater than 0');
+    }
+  return $StepSize;
 }
 
 /**
