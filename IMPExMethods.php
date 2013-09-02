@@ -278,7 +278,7 @@ class IMPExMethods {
   }
 
   /**
-   * getParticleTrajectory ...TODO
+   * getParticleTrajectory returns the trajectory for particles of a particular mass, charge and starting velocity
    * 
    * @param String $ResourceID
    * @param String $Direction  (default forward)
