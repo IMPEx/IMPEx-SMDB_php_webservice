@@ -196,6 +196,7 @@ function check_input_ResourceID($ResourceID, $resourceList, $tree_url){
 			       'parameters' => $parameters,
 			       'mass' => $parameters[0]["mass"],
 			       'charge' => $parameters[0]["charge"],
+			       'simul_timestep' => $simul_timestep,
 			       'resourceIDSimulation' => $resourceIDSimulation,
 			       'gridStructure' => $gridstructure,
 			       'gridSize' => $gridcellsize,

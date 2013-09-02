@@ -297,7 +297,7 @@ def iontracer_writecfg(dict_input, points):
         cfg += 'MAXSTEPS {steps:.0f}\n'.format(steps = dict_input['maxsteps'])
     
     if dict_input['stepsize'] > 0:
-        cfg += 'STEPSIZE {stepsize:.3f}\n'.format(stepsize = dict_input['stepsize'])
+        cfg += 'STEPSIZE {stepsize:.3f}\n'.format(stepsize = float(dict_input['stepsize']))
 
     order = {'nearestgridpoint': 0, 'linear': 1}
     if dict_input['order'] != 'nearestgridpoint':
@@ -561,8 +561,15 @@ def getParticleTrajectory(dict_input):
 
     # Get the points from votable
     points = _url2points(dict_input['url_XYZ'])
-    
-    # Check all masses and charges in points are equal         # FIXME! THEY ARE NUMPY ARRAYS!
+
+    # Check that all the inputs exist
+    needed_values = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'mass', 'charge']
+    check_all = lambda x: x in points
+    checked = map(check_all, needed_values)
+    if (False in checked):
+        outjson['error'] = 'A votable with ' + ', '.join(needed_values) + ' is needed to run this function'
+
+    # Check all masses and charges in points are equal
     if ((np.any(points['mass'][0] != points['mass']) or np.any(points['charge'][0] != points['charge']))):
         outjson['error'] = 'All masses and charges need to be the same'
         return outjson
