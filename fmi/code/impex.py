@@ -562,8 +562,8 @@ def getParticleTrajectory(dict_input):
     # Get the points from votable
     points = _url2points(dict_input['url_XYZ'])
     
-    # Check all masses and charges in points are equal
-    if (len(points['mass']) != (points['mass']).count(points['mass'][0])) or (len(points['charge']) != (points['charge']).count(points['charge'][0])):
+    # Check all masses and charges in points are equal         # FIXME! THEY ARE NUMPY ARRAYS!
+    if ((np.any(points['mass'][0] != points['mass']) or np.any(points['charge'][0] != points['charge']))):
         outjson['error'] = 'All masses and charges need to be the same'
         return outjson
 
