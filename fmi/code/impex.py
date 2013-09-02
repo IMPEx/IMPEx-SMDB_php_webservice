@@ -568,6 +568,7 @@ def getParticleTrajectory(dict_input):
     checked = map(check_all, needed_values)
     if (False in checked):
         outjson['error'] = 'A votable with ' + ', '.join(needed_values) + ' is needed to run this function'
+        return outjson
 
     # Check all masses and charges in points are equal
     if ((np.any(points['mass'][0] != points['mass']) or np.any(points['charge'][0] != points['charge']))):
