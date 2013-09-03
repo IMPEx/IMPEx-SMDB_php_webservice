@@ -17,6 +17,7 @@ import StringIO
 import tempfile
 import datetime
 import ConfigParser
+import traceback
 
 impex_cfg = ConfigParser.RawConfigParser()
 impex_cfg.read('fmi/code/fmi.cfg')  # Is there a way to don't parse the path this way?
@@ -672,8 +673,9 @@ if __name__ == '__main__':# Load the data that PHP sent us
     try:
         fileout = functions[data['function']](data)
     except:
-        print('ERROR: Function not recognized')
-        sys.exit(1)
+        error = str(sys.exc_info()[0])
+        error += traceback.format_exc()
+        fileout = {'error':error + ' ' + sys.argv[1]}
     
     # Generate some data to send to PHP
     #result = {'fileout': fileout}

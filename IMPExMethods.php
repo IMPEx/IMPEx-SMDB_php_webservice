@@ -18,7 +18,7 @@ require('config.php');
 require_once('extra_functions.php');
 require_once($local_functions[$institute]);
 require_once('complex_types.php');
-
+require_once('Zend/Soap/Client.php');
 
 class IMPExMethods {
 
@@ -155,7 +155,7 @@ class IMPExMethods {
    * @param String $ResourceID
    * @param String $Variable
    * @param String $Spacecraft_name
-   * @param startDate $StartTime - it should be time input
+   * @param String $StartTime - it should be time input
    * @param String $StopTime
    * @param String $Sampling - (iso8601)
    * @param Float $IMFClockAngle (default 0)
@@ -190,7 +190,7 @@ class IMPExMethods {
     $client = new Zend_Soap_Client('http://cdpp1.cesr.fr/AMDA-NG/public/wsdl/Methods_AMDA.wsdl'); //TODO: externalize this webservice to Global 
 
     try {
-      $result = $client->getParameter($properties);
+      $result = $client->getParameter($parameters_AMDA);
       $url_XYZ = $result->dataFileURLs;
     } catch (SoapFault $s) {
       throw new SoapFault('1', 'ERROR: [' . $s->faultcode . '] ' . $s->faultstring);
@@ -198,7 +198,7 @@ class IMPExMethods {
       throw new SoapFault('2', 'ERROR: ' . $e->getMessage());
     }
 
-    $url_Param = getDataPointValue($ResourceID, $Variable, $url_XYZ, $IMFClockAngle,
+    $url_Param = $this->getDataPointValue($ResourceID, $Variable, $url_XYZ, $IMFClockAngle,
 				   $InterpolationMethod, $OutputFileType);
 
 
