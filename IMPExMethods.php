@@ -171,11 +171,38 @@ class IMPExMethods {
 					       $IMFClockAngle = 0,
 					       $InterpolationMethod = 'Linear',
 					       $OutputFileType = 'votable'){
+    $missions = array('VenusExpress' => 'vex_xyz', 
+		      'MarsExpress' => 'mex_xyz');
     /*  ==================================================
 	Check variables 
 	==================================================
     */
-    return true;
+    
+
+    // TODO: Above, to check time formats, and sampling, and match of mission with model resource ID
+    $parameters_AMDA = array('outputFormat' => 'VOTable',
+			     'userID' => 'impex',
+			     'startTime' => $StartTime,
+			     'stopTime' => $StopTime,
+			     'sampling' => $Sampling,
+			     'parameterID' => $missions[$Spacecraft_name]
+			     );
+    $client = new Zend_Soap_Client('http://cdpp1.cesr.fr/AMDA-NG/public/wsdl/Methods_AMDA.wsdl'); //TODO: externalize this webservice to Global 
+
+    try {
+      $result = $client->getParameter($properties);
+      $url_XYZ = $result->dataFileURLs;
+    } catch (SoapFault $s) {
+      throw new SoapFault('1', 'ERROR: [' . $s->faultcode . '] ' . $s->faultstring);
+    } catch (Exception $e) {
+      throw new SoapFault('2', 'ERROR: ' . $e->getMessage());
+    }
+
+    $url_Param = getDataPointValue($ResourceID, $Variable, $url_XYZ, $IMFClockAngle,
+				   $InterpolationMethod, $OutputFileType);
+
+
+    return $url_Param;
   }
 
   /**
