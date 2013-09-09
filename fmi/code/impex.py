@@ -56,7 +56,7 @@ fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m
 
 def query2string(query):
     finalstring = 'Result provided by impex-fp7 project with query {\n '
-    # TODO!
+    # TODO! Try in case it does not have keys
     for key in query:
         if key == 'variables':
             finalstring += key + ': ' + ','.join(query[key]) + ';\n '
