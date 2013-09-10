@@ -499,6 +499,10 @@ def getDataPointValue(dict_input):
     # parse hcerror/warnings to the savefile
     if (hcerror != ''):
         dict_input['hc_warnings'] = hcerror
+    
+    # Add Time to results if the original input table had them (eg, getDataPointValue_spacecraft)
+    if (points.has_key('Time')):
+        result['Time'] = points['Time']
 
     outname = _writeout(dict_input, result)
     # outfile to URL
