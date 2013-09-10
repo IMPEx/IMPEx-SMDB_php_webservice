@@ -572,7 +572,68 @@ def getDataPointValue_spacecraft(dict_input):
 def getDataPointSpectra(dict_input):
     pass
 def getSurface(dict_input):
-    pass
+    '''
+    Executes the getDataPointValue but for an input plane
+    -function: getSurface
+    -filename: filename with path from the ResourceID requested
+    -variables: List of variables to interpolate
+    -vector: normal vector to the plane wanted
+    -point: point to find the wanted plane perpendicular to the normal
+    -resolution: space between the datapoints
+    -IMFClockAngle: no used here (yet)
+    -order: Interpolation method wanted, either lineal or nearestgridpoint
+    -OutputFiletype: netcdf or votable
+    -box_min: Minimum points for the simulation box
+    -box_max: Maximum points for the simulation box
+    '''    
+    outjson = {'out_url':'', 'error':'' }
+    # Get filename - TODO: Check whether it's right/accessible
+    filename = dict_input['filename']
+    # Check variables is a proper list (Needed?)
+    # Check Interpolation Method
+    if (dict_input['order'] == 'nearestgridpoint'):
+        linear = False
+    else:
+        linear = True
+    # Create the plane
+    box_min = dict_input['box_min']
+    box_max = dict_input['box_max']
+    resolution = dict_input['resolution']
+    x_limits = np.arange(box_min[0], box_max[0], resolution)
+    y_limits = np.arange(box_min[1], box_max[1], resolution)
+    xx, yy = np.meshgrid(x_limits, y_limits)
+    
+    # a plane follows: a*x + b*y + c*z + d = 0
+    # [a,b,c] = vector
+    # d is obtained from the 'point'
+    point = np.array(dict_input['point'])
+    normal = np.array(dict_input['vector'])
+    d = -np.sum(point*normal)# dot product
+    
+    # the plane is obtained as
+    zz = (-normal[0]*xx - normal[1]*yy - d)*1./normal[2]
+
+    x, y, z = xx.flatten(), yy.flatten, zz.flatten
+
+    # Run hcintpol with the the file, coordinates, var and intpol method
+    filename = str(dict_input['filename'])
+    result, hcerror = hcintpol(filename.replace('\\',''), 
+                      x, y, z, 
+                      variables=dict_input['variables'], 
+                      linear=linear)
+    if (len(result.keys()) < 4):
+        outjson['error'] = 'ERROR: Unrecognized variable names \n hcintpol message:\n' + hcerror
+        return outjson
+
+    # parse hcerror/warnings to the savefile
+    if (hcerror != ''):
+        dict_input['hc_warnings'] = hcerror
+
+    outname = _writeout(dict_input, result)
+    # outfile to URL
+    outjson['out_url'] = impex_cfg.get('fmi', 'httpoutput') + os.path.basename(outname)
+    return outjson
+
 def getFileURL(dict_input):
     pass
 def getDataPointSpectra_spacecraft(dict_input):

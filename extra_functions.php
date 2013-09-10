@@ -515,6 +515,89 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
 }
 
 /**
+ * check_input_vector finds if the vector is well constructed
+ * @param string $vector
+ * @return array $vector_arr
+ * @throws SoapFault for (1) empty vector, (2) not 3 coordinates, 
+ */
+function check_input_vector($vector){
+  if ((is_null($vector) or $vector == ''))
+    {
+      throw new SoapFault('1', 'The vector is a compulsary parameter');
+    }
+  $vector_arr = preg_split("/[\s(,|;)]+/", $vector);
+  if (count($vector_arr) !== 3)
+    {
+      throw new SoapFault('2', 'The vector needs its 3 components as x,y,z. You can separated them by "," or ";"');
+    }
+  return $vector_arr;
+}
+
+/**
+ * check_input_planepoint finds if the input point is within boundaries and well constructed
+ * @param string $planepoint
+ * @param array $model_properties with the keys: 'valid_min' and 'valid_max'
+ * @return array $planepoint_arr
+ * @throws SoapFault for (1) empty vector, (2) not 3 coordinates, (3) out of boundaries
+ */
+function check_input_planepoint($planepoint, array $model_properties){
+  if ((is_null($planepoint) or $planepoint == ''))
+    {
+      throw new SoapFault('1', 'The point in the plane is a compulsary parameter');
+    }
+  $planepoint_arr = preg_split("/[\s(,|;)]+/", $planepoint);
+  if (count($planepoint_arr) !== 3)
+    {
+      throw new SoapFault('2', 'The point on the plane needs its 3 components as x,y,z. You can separated them by "," or ";"');
+    }
+  if (array_key_exists('valid_min', $model_properties) AND
+      array_key_exists('valid_max', $model_properties))
+    {
+      if (!array_edges($model_properties['valid_min'],$planepoint_arr) or !array_edges($planepoint_arr, $model_properties['valid_max']))
+	{
+	  throw new SoapFault('3', 'One or more of the input points of the plane are outside boundaries, which are: [('.
+			      implode(",", $model_properties['valid_min']).
+			      ') - ('.
+			      implode(",", $model_properties['valid_max']).
+			      ')]');
+	}
+    }
+  else
+    {
+      /* model coordinates not in array! */
+      throw new SoapFault('3', 'the model boundaries are not available');
+    }
+
+  return $planepoint_arr;
+}
+
+/**
+ * check_input_resolution check the input and choose the grid size if not
+ * @param string $resolution
+ * @return array $resolution_out
+ * @throws SoapFault for (1) is a number, (2) there's not gridsize defined in the model
+ */
+function check_input_resolution($resolution, array $model_properties){
+  $resolution_out = $resolution;
+  if ((is_null($vector) or $vector == ''))
+    {
+      if (array_key_exists('gridSize', $model_properties))
+	{
+	  $resolution_out = min($model_properties['gridSize']);
+	}
+      else
+	{
+	  throw new SoapFault('2', 'The GridCellSize is not available in the model, the resolution needs to be set manually');
+	}
+    }
+  else if(!is_numeric($resolution))
+    {
+      throw new SoapFault('1', 'The resolution needs to be a number');
+    }
+  return $resolution_out;
+}
+
+/**
  * check_input_coordinates looks up if all the parameters are properly formed
  * @param string $x
  * @param string $y

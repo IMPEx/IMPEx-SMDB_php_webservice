@@ -150,7 +150,7 @@ class IMPExMethods {
   }
 
   /**
-   * getDataPointValue_spacecraft ...TODO.
+   * getDataPointValue_spacecraft returns the interpolated values for the orbit of a s/c for certain time interval.
    *
    * @param String $ResourceID
    * @param String $Variable
@@ -231,7 +231,7 @@ class IMPExMethods {
   }
 
   /**
-   * getSurface ...TODO.
+   * getSurface ...TODO... returns a plane for the variable asked
    *
    * @param String $ResourceID
    * @param String $Variable
@@ -246,7 +246,7 @@ class IMPExMethods {
   public function getSurface($ResourceID, $Variable = NULL, 
 			     $NormalVectorPlane,
 			     $PlanePoint,
-			     $Resolution,
+			     $Resolution = NULL,
 			     $IMFClockAngle = 0,
 			     $InterpolationMethod = 'Linear',
 			     $OutputFileType = 'votable'){
@@ -254,7 +254,41 @@ class IMPExMethods {
 	Check variables 
 	==================================================
     */
-    return true;
+    /* ResourceID */
+    $model_properties = check_input_ResourceID($ResourceID, $GLOBALS['models'], $GLOBALS['tree_url']);
+
+    /* Variable */
+    $variables = check_input_Variable($Variable, $model_properties['parameters']);
+
+    /* NormalVectorPlane */
+    $NormalVectorPlane = check_input_vector($NormalVectorPlane); // the vector is an array now.
+
+    /* PlanePoint */
+    $PlanePoint = check_input_planepoint($PlanePoint, $model_properties);// the point is an array now.
+    
+    /* Resolution */
+    $Resolution = check_input_resolution($Resolution, $model_properties);
+
+    /* IMFClockAngle */  
+    $IMFClockAngle = check_input_IMFClockAngle($IMFClockAngle);
+
+    /* InterpolationMethod */
+    check_input_InterpolationMethod($InterpolationMethod);
+
+    /* OutputFileType  */
+    $OutputFileType = check_input_OutputFileType($OutputFileType);
+
+    /* RUN external program */
+    /* check whether it's a local request or needs to spawn a request to a different smdb ; if local proceed, else soap client?*/
+    $Parameters = array($ResourceID, $variables,
+			$NormalVectorPlane, $PlanePoint, 
+			$Resolution, $IMFClockAngle,
+			$InterpolationMethod,
+			$OutputFileType, $model_properties);
+    $url_Param = execute_Method(__FUNCTION__, $model_properties['institute'],
+				$Parameters);
+    // The method executed throws an error message if file/url is not created
+    return $url_Param;
   }
   /**
    * getFileURL ...TODO

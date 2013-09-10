@@ -130,4 +130,30 @@ function run_getVOTableURL($x, $y, $z, $vx = NULL, $vy = NULL, $vz = NULL, $mass
   return run_fmi_any($data2funct);
 }
 
+/**
+ *
+ */
+function run_getSurface($ResourceID, $variables,
+			$NormalVectorPlane, $PlanePoint, 
+			$Resolution, $IMFClockAngle,
+			$InterpolationMethod,
+			$OutputFiletype, $properties){
+
+  $data2funct = array('function' => 'getSurface',                            // string
+		      'ResourceID' => $ResourceID,                           // string
+		      'filename' => $properties['ProductKey'],               // string  TODO: FIXME! it produces a list {'0':'file...'} ????
+		      'variables' => $variables,                             // list
+		      'vector' => $NormalVectorPlane,                        // list
+		      'point' => $PlanePoint,                                // list
+		      'resolution' => $Resolution,                           // float
+		      'box_min' => $properties['valid_min'],
+		      'box_max' => $properties['valid_max'],
+		      // 'IMFClockAngle' => $IMFClockAngle,                  // float
+		      'order' => $InterpolationMethod,                       // string: 'linear' || 'nearestgridpoint'
+		      'OutputFiletype' => $OutputFiletype);                  // string: 'votable'|| 'netcdf'
+
+
+  return run_fmi_any($data2funct);
+}
+
 ?>
