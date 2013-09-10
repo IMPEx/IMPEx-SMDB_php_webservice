@@ -49,7 +49,7 @@ fields_props = {'x':     {'name': 'posx', 'ucd': 'pos.cartesian.x', 'units': u.m
                 'Ey' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
                 'Ez' :   {'name': 'Ex','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'},
                 'E'  :   {'name': 'E','ucd': 'phys.electField', 'units': u.V / u.m ** 2, 'type': 'double', 'size': '1'}, 
-                'Time':  {'name': 'Date', 'ucd': 'TIME', 'unit': 'iso-8601', 'type': 'char', 'size': '*'},
+                'Time':  {'name': 'Date', 'ucd': 'time', 'units': 'iso-8601', 'type': 'char', 'size': '*'},
                 'mass':  {'name': 'Mass', 'ucd': 'phys.mass', 'units': u.kilogram, 'type':'double', 'size': '1'},
                 'charge':{'name': 'Charge', 'ucd': 'phys.atmol.charge', 'units': u.coulomb, 'type':'double', 'size': '1'}
 }                            
@@ -85,12 +85,6 @@ def _vot2points_amda(vot):
     points['z'] = value[2,:]
     return points
 
-    for element in vot.iter_fields_and_params():
-        if element.name == 'Time':
-            points['Time'] = element.values
-    
-
-
 def vot2points(filename):
     '''
     It produces a dictionary with the arrays for each of the fields we use in the other functions
@@ -102,25 +96,30 @@ def vot2points(filename):
     # back to normal...
     vot = votable.parse_single_table(filename, pedantic = False)
     axis = ['x', 'y', 'z']
-    types = ['pos.cartesian.'+l for l in axis] + ['phys.veloc', 'phys.mass', 'phys.atmol.charge']
+    types = ['pos.cartesian.'+l for l in axis] + ['phys.veloc', 'phys.mass', 'phys.atmol.charge', 'time']
     points = {}
     for column in vot.iter_fields_and_params():
         ucd = str(column.ucd)
         if ucd.lower() in types:
             if ucd.lower() == types[3]:
+                # Create the points for the velocity 
                 findaxis = lambda x: x in column.name.lower()
                 mask = map(findaxis, axis)
                 if True in mask:
                     column_name = 'v'+axis[mask.index(True)]
                     column_unit = column.unit if column.unit is not None else fields_props[column_name]['units']
                     column_values = vot.array[column.ID].data * column_unit
-                    points[column_name] = column_values.si.value
+                    points[column_name] = column_values.si.value.reshape((len(column_values),))
             else:
+                # Create the points for the rest
                 for key in fields_props.keys():
                     if ucd.lower() == fields_props[key]['ucd']:
-                        column_unit = column.unit if column.unit is not None else fields_props[key]['units']
-                        column_values = vot.array[column.ID].data * column_unit
-                        points[key] = column_values.si.value
+                        #column_unit = column.unit if column.unit is not None else fields_props[key]['units']
+                        if (column.unit is not None and ucd.lower() != 'time'):
+                            column_values = (vot.array[column.ID].data * column.unit).si.value  
+                        else:
+                            column_values = vot.array[column.ID].data
+                        points[key] = column_values.reshape((len(column_values),))
     return points
 
 def points2vot(filename, points_d, query, time = None):
@@ -154,13 +153,13 @@ def points2vot(filename, points_d, query, time = None):
             table.description = key  # line_00, ..
 
             var = sorted(line.keys())
-            if time is None:
+            if time is None: # Does it make sense having time here, field lines or trajectories does not produce times
                 var = var[-3:] + var[:-3]
             else:
                 var = ['Time'] + var[-3:] + var[:-3]
 
             fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
-                                         arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string('cds'), 
+                                         unit=fields_props[v]['units'].to_string('cds'), arraysize=fields_props[v]['size'],  #arraysize is creating an array of shape (lines, 1)
                                          ucd=fields_props[v]['ucd']) for v in var if line[v] is not None]
             table.fields.extend(fields)
 
@@ -181,26 +180,29 @@ def points2vot(filename, points_d, query, time = None):
         resource.tables.append(table)
 
         var = sorted(points_d.keys())
+        if points_d.has_key('Time'):
+            time = points_d['Time']
+            
         if time is None:
             var = var[-3:] + var[:-3]
         else:
             var = ['Time'] + var[-3:] + var[:-3]
-
+        units = lambda x: fields_props[x]['units'].to_string('cds') if x != 'Time' else fields_props[x]['units']
         fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
-                                     arraysize=fields_props[v]['size'], unit=fields_props[v]['units'].to_string('cds'), 
+                                     arraysize=fields_props[v]['size'], unit=units(v), 
                                      ucd=fields_props[v]['ucd']) for v in var if points_d[v] is not None]
         table.fields.extend(fields)
 
         # points_d dict to array
-        points_array = np.array([map(float, points_d[x]) for x in var if points_d[x] is not None]).transpose() #NOTE: this assumes we are just passing numbers!
+        points_array = np.array([map(float, points_d[x]) for x in var if (x != 'Time' and points_d[x] is not None)]).transpose() #NOTE: this assumes we are just passing numbers!
         table.create_arrays(points_array.shape[0])
-        
+
         if time is None:
             points_mask = np.ma.masked_array(points_array, mask = False)
             table.array = points_mask
         else:
             for i, line in enumerate(time):
-                table.array[i] = tuple(time[i]) + tuple(points_array[i, :])
+                table.array[i] = tuple([time[i]]) + tuple(points_array[i, :])
 
     vot.to_xml(filename)
 
