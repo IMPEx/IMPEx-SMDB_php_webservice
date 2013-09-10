@@ -186,6 +186,7 @@ def points2vot(filename, points_d, query, time = None):
         if time is None:
             var = var[-3:] + var[:-3]
         else:
+            var.remove('Time')
             var = ['Time'] + var[-3:] + var[:-3]
         units = lambda x: fields_props[x]['units'].to_string('cds') if x != 'Time' else fields_props[x]['units']
         fields = [votable.tree.Field(votable, name=fields_props[v]['name'], datatype=fields_props[v]['type'], 
