@@ -596,29 +596,38 @@ def getSurface(dict_input):
     else:
         linear = True
     # Create the plane
-    box_min = dict_input['box_min']
-    box_max = dict_input['box_max']
-    resolution = dict_input['resolution']
-    x_limits = np.arange(box_min[0], box_max[0], resolution)
-    y_limits = np.arange(box_min[1], box_max[1], resolution)
+    box_min = [float(x) for x in dict_input['box_min']]
+    box_max = [float(x) for x in dict_input['box_max']]
+    resolution = float(dict_input['resolution'])
+
+    # Vector, point and dot product (to find d!)
+    normal = np.array([float(x) for x in dict_input['vector']])
+    point = np.array([float(x) for x in dict_input['point']])
+    d = -np.sum(point*normal)# dot product
+
+    # Find the indices of sort(abs(normal)) so we don't divide by 0
+    indices = [i[0] for i in sorted(enumerate(np.abs(normal)), key=lambda x:x[1])]
+    
+    # The following are pseudo x,y and z, we will get back to the right one using indices
+    x_limits = np.arange(box_min[indices[0]], box_max[indices[0]], resolution)
+    y_limits = np.arange(box_min[indices[1]], box_max[indices[1]], resolution)
     xx, yy = np.meshgrid(x_limits, y_limits)
     
-    # a plane follows: a*x + b*y + c*z + d = 0
+    # The eq of a plane is: a*x + b*y + c*z + d = 0
     # [a,b,c] = vector
-    # d is obtained from the 'point'
-    point = np.array(dict_input['point'])
-    normal = np.array(dict_input['vector'])
-    d = -np.sum(point*normal)# dot product
-    
-    # the plane is obtained as
-    zz = (-normal[0]*xx - normal[1]*yy - d)*1./normal[2]
+    # d is obtained from the dot product 'point * normal' (above)
+    # the last plane coordinates are obtained as
+    zz = (-normal[indices[0]]*xx - normal[indices[1]]*yy - d)*1./normal[indices[2]]
 
-    x, y, z = xx.flatten(), yy.flatten, zz.flatten
+    # Convert from the pseudo xx,yy,zz to the real x,y,z
+    axis_order = ['x', 'y', 'z']
+    pseudo_plan = [xx, yy, zz]
+    points = {axis_order[ind]:pseudo_plan[i].flatten() for i,ind in enumerate(indices)}
 
     # Run hcintpol with the the file, coordinates, var and intpol method
     filename = str(dict_input['filename'])
     result, hcerror = hcintpol(filename.replace('\\',''), 
-                      x, y, z, 
+                      points['x'], points['y'], points['z'],
                       variables=dict_input['variables'], 
                       linear=linear)
     if (len(result.keys()) < 4):

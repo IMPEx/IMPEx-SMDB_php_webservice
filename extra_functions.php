@@ -518,7 +518,7 @@ function check_input_StopCondition_Region($StopCondition_Region, array $model_pr
  * check_input_vector finds if the vector is well constructed
  * @param string $vector
  * @return array $vector_arr
- * @throws SoapFault for (1) empty vector, (2) not 3 coordinates, 
+ * @throws SoapFault for (1) empty vector, (2) not 3 coordinates, (3) not null vector (0,0,0)
  */
 function check_input_vector($vector){
   if ((is_null($vector) or $vector == ''))
@@ -529,6 +529,10 @@ function check_input_vector($vector){
   if (count($vector_arr) !== 3)
     {
       throw new SoapFault('2', 'The vector needs its 3 components as x,y,z. You can separated them by "," or ";"');
+    }
+  if ($vector_arr[0] == "0" and count(array_unique($vector_arr)) == 1)
+    {
+      throw new SoapFault('3', '(0,0,0) is not a vector');
     }
   return $vector_arr;
 }
