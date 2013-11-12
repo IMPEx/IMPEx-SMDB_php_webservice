@@ -67,7 +67,7 @@ def query2string(query):
     return finalstring
 
 def _vot2points_amda(vot):
-    planets = {'Rv': 6051*u.km, 'Rm': 3396*u.km}  #TODO: check values!
+    planets = {'Rv': 6051*u.km, 'Rm': 3396*u.km, 'Re': 6371*u.km}  #TODO: check values!
     points = {}
     table = vot.get_first_table()
     data = table.array
