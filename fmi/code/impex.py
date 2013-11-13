@@ -75,7 +75,7 @@ def _vot2points_amda(vot):
     coord = np.empty((3,len(data)))
     for i, element in enumerate(data):
         time.append(element[0])
-        coord[:,i] = element[1]
+        coord[:,i] = element[1:4]
     points['Time'] = time
     axes = ['x', 'y', 'z']
     units = planets[str(table.fields[1].unit)]
